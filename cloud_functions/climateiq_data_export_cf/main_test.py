@@ -41,42 +41,20 @@ def test_export_model_predictions_missing_study_area(
     }
     data = {
         "bucket": "climateiq-predictions",
-        "name": "prediction-type/model-id/study-area-name/scenario-id/"
-        "chunk-id",
+        "name": "prediction-type/model-id/study-area-name/scenario-id/chunk-id",
     }
     event = CloudEvent(attributes, data)
 
     # Build mock Storage object
-    mock_bucket = mock.create_autospec(storage.Bucket)
-    mock_blob = mock.create_autospec(storage.Blob)
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}\n'
-    mock_fd = MagicMock()
-    mock_fd.__iter__.return_value = predictions.splitlines()
-    mock_blob.open.return_value.__enter__.return_value = mock_fd
-    mock_bucket.blob.return_value = mock_blob
-    mock_storage_client.return_value.bucket.return_value = mock_bucket
+
+    with mock_storage_client().bucket("").blob("").open() as mock_fd:
+        mock_fd.__iter__.return_value = iter(predictions.splitlines())
 
     # Build mock Firestore document
-    mock_document = mock.create_autospec(firestore.DocumentSnapshot)
-    mock_document.exists = False  # Indicate study area doesn't exist
-    metadata = {
-        "name": "study_area_name",
-        "cell_size": 10,
-        "crs": "EPSG:32618",
-        "chunks": {
-            "chunk-id": {
-                "row_count": 2,
-                "col_count": 3,
-                "x_ll_corner": 500,
-                "y_ll_corner": 100,
-            }
-        },
-    }
-    mock_document.to_dict.return_value = metadata
-    mock_firestore_client.return_value.collection.return_value.document \
-        .return_value.get.return_value = (
-            mock_document
-        )
+    mock_firestore_client().collection("").document(
+        ""
+    ).get().exists = False  # Indicate study area doesn't exist
 
     with pytest.raises(ValueError) as exc_info:
         main.export_model_predictions(event)
