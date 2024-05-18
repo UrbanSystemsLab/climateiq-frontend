@@ -1,0 +1,10 @@
+black==24.4.0
+cloudevents==1.10.1
+flake8==7.0.0
+functions-framework==3.5.0
+google-cloud==0.34.0
+google-cloud-storage==2.16.0
+h3==3.7.7
+mypy==1.10.0
+pandas==2.2.2
+pytest==8.1.1
