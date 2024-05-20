@@ -324,8 +324,8 @@ def test_export_model_predictions(mock_firestore_client, mock_storage_client) ->
     # Build expected output data
     expected_series = pd.Series(
         {
-            "8a8f2c80c14ffff": 4.5,
-            "8a8f2c80c15ffff": 3.0,
+            "8a8f2c80c14ffff": 6.0,
+            "8a8f2c80c15ffff": 5.0,
         }
     )
 
@@ -333,5 +333,7 @@ def test_export_model_predictions(mock_firestore_client, mock_storage_client) ->
         main.export_model_predictions(event)
 
     pd_testing.assert_series_equal(
-        pd.read_json(StringIO(str(exc_info.value)), typ="series"), expected_series
+        pd.read_json(StringIO(str(exc_info.value)), typ="series"),
+        expected_series,
+        check_dtype=False,
     )

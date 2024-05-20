@@ -1,5 +1,4 @@
 import json
-import pathlib
 
 from cloudevents import http
 import functions_framework
@@ -8,6 +7,7 @@ from google.cloud import firestore
 from google.cloud import storage
 from h3 import h3
 import pandas as pd
+import pathlib
 import numpy as np
 
 
@@ -222,8 +222,8 @@ def _convert_to_h3(df: pd.DataFrame) -> pd.Series:
         points which fall within each h3 cell.
     """
     df["h3"] = df.apply(_lat_lng_to_h3, axis=1)
-    # TODO: Produce different aggregation(s) depending on prediction type.
-    predictions = df.groupby(["h3"]).prediction.agg("mean")
+    # TODO: Finalize which aggregation to calculate for each prediction type.
+    predictions = df.groupby(["h3"]).prediction.agg("max")
     return predictions
 
 
