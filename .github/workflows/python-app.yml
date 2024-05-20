@@ -39,29 +39,3 @@ jobs:
     - name: MyPy Type Checking
       run: |
         mypy cloud_functions/climateiq_data_export_cf
-  convert_h3_cf:
-    name: convert_h3_cf CI
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.11"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        cd cloud_functions/convert_h3_cf
-        pip install -r requirements.txt
-    - name: Lint with flake8
-      run: |
-        flake8 cloud_functions/convert_h3_cf --show-source --statistics
-    - name: Ensure black auto-formatter has run
-      run: |
-        black cloud_functions/convert_h3_cf --check
-    - name: Test with pytest
-      run: |
-        pytest cloud_functions/convert_h3_cf
-    - name: MyPy Type Checking
-      run: |
-        mypy cloud_functions/convert_h3_cf
