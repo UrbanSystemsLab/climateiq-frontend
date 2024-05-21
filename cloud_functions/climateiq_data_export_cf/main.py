@@ -221,11 +221,9 @@ def _convert_to_h3(df: pd.DataFrame) -> pd.Series:
         A Series of h3 indices to the aggregated prediction for the lat/lon center
         points which fall within each h3 cell.
     """
-    df["h3"] = df.apply(_lat_lng_to_h3, axis=1)
+    df["h3"] = df.apply(
+        lambda row: h3.geo_to_h3(row["lat"], row["lon"], H3_LEVEL), axis=1
+    )
     # TODO: Finalize which aggregation to calculate for each prediction type.
     predictions = df.groupby(["h3"]).prediction.agg("max")
     return predictions
-
-
-def _lat_lng_to_h3(row, h3_level=H3_LEVEL):
-    return h3.geo_to_h3(row["lat"], row["lon"], h3_level)
