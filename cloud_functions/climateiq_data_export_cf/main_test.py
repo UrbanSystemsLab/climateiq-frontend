@@ -306,7 +306,7 @@ def test_export_model_predictions(mock_firestore_client, mock_storage_client) ->
     # Build mock Firestore document
     metadata = {
         "name": "study_area_name",
-        "cell_size": 50,
+        "cell_size": 10,
         "crs": "EPSG:32618",
         "chunks": {
             "chunk-id": {
@@ -324,8 +324,12 @@ def test_export_model_predictions(mock_firestore_client, mock_storage_client) ->
     # Build expected output data
     expected_series = pd.Series(
         {
-            "8a8f2c80c14ffff": 6.0,
-            "8a8f2c80c15ffff": 5.0,
+            "8d8f2c80c1582bf": 3.0,
+            "8d8f2c80c1586bf": 1.0,
+            "8d8f2c80c1586ff": 2.0,
+            "8d8f2c80c15b83f": 6.0,
+            "8d8f2c80c15bc3f": 4.0,
+            "8d8f2c80c15bd7f": 5.0,
         }
     )
 

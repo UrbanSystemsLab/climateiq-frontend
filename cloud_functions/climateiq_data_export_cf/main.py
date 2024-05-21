@@ -12,7 +12,7 @@ import numpy as np
 
 
 GLOBAL_CRS = "EPSG:4326"
-H3_LEVEL = 10
+H3_LEVEL = 13
 STUDY_AREAS_ID = "study_areas"
 
 
