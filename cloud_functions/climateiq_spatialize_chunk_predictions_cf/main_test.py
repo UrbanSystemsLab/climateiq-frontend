@@ -14,7 +14,10 @@ from typing import Any, Dict
 
 def test_spatialize_chunk_predictions_invalid_object_name() -> None:
     event = http.CloudEvent(
-        {},
+        {
+            "type": "google.cloud.pubsub.topic.v1.messagePublished",
+            "source": "source",
+        },
         {
             "message": {
                 "data": base64.b64encode(b"invalid_name"),
@@ -34,7 +37,10 @@ def test_spatialize_chunk_predictions_missing_study_area(
     mock_firestore_client, mock_storage_client
 ) -> None:
     event = http.CloudEvent(
-        {},
+        {
+            "type": "google.cloud.pubsub.topic.v1.messagePublished",
+            "source": "source",
+        },
         {
             "message": {
                 "data": base64.b64encode(
@@ -66,7 +72,10 @@ def test_spatialize_chunk_predictions_invalid_study_area(
     mock_firestore_client, mock_storage_client
 ) -> None:
     event = http.CloudEvent(
-        {},
+        {
+            "type": "google.cloud.pubsub.topic.v1.messagePublished",
+            "source": "source",
+        },
         {
             "message": {
                 "data": base64.b64encode(
@@ -117,7 +126,10 @@ def test_spatialize_chunk_predictions_missing_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
     event = http.CloudEvent(
-        {},
+        {
+            "type": "google.cloud.pubsub.topic.v1.messagePublished",
+            "source": "source",
+        },
         {
             "message": {
                 "data": base64.b64encode(
@@ -166,7 +178,10 @@ def test_spatialize_chunk_predictions_invalid_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
     event = http.CloudEvent(
-        {},
+        {
+            "type": "google.cloud.pubsub.topic.v1.messagePublished",
+            "source": "source",
+        },
         {
             "message": {
                 "data": base64.b64encode(
@@ -217,7 +232,10 @@ def test_spatialize_chunk_predictions_missing_predictions(
     mock_firestore_client, mock_storage_client
 ) -> None:
     event = http.CloudEvent(
-        {},
+        {
+            "type": "google.cloud.pubsub.topic.v1.messagePublished",
+            "source": "source",
+        },
         {
             "message": {
                 "data": base64.b64encode(
@@ -269,7 +287,10 @@ def test_spatialize_chunk_predictions_too_many_predictions(
     mock_firestore_client, mock_storage_client
 ) -> None:
     event = http.CloudEvent(
-        {},
+        {
+            "type": "google.cloud.pubsub.topic.v1.messagePublished",
+            "source": "source",
+        },
         {
             "message": {
                 "data": base64.b64encode(
@@ -321,7 +342,10 @@ def test_spatialize_chunk_predictions_missing_expected_neighbor_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
     event = http.CloudEvent(
-        {},
+        {
+            "type": "google.cloud.pubsub.topic.v1.messagePublished",
+            "source": "source",
+        },
         {
             "message": {
                 "data": base64.b64encode(
@@ -377,7 +401,10 @@ def test_spatialize_chunk_predictions_invalid_neighbor_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
     event = http.CloudEvent(
-        {},
+        {
+            "type": "google.cloud.pubsub.topic.v1.messagePublished",
+            "source": "source",
+        },
         {
             "message": {
                 "data": base64.b64encode(
@@ -440,7 +467,10 @@ def test_spatialize_chunk_predictions_neighbor_chunk_missing_predictions(
     mock_firestore_client, mock_storage_client
 ) -> None:
     event = http.CloudEvent(
-        {},
+        {
+            "type": "google.cloud.pubsub.topic.v1.messagePublished",
+            "source": "source",
+        },
         {
             "message": {
                 "data": base64.b64encode(
@@ -503,7 +533,10 @@ def test_spatialize_chunk_predictions_h3_centroids_within_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
     event = http.CloudEvent(
-        {},
+        {
+            "type": "google.cloud.pubsub.topic.v1.messagePublished",
+            "source": "source",
+        },
         {
             "message": {
                 "data": base64.b64encode(
@@ -578,7 +611,10 @@ def test_spatialize_chunk_predictions_h3_centroids_outside_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
     event = http.CloudEvent(
-        {},
+        {
+            "type": "google.cloud.pubsub.topic.v1.messagePublished",
+            "source": "source",
+        },
         {
             "message": {
                 "data": base64.b64encode(
@@ -667,7 +703,10 @@ def test_spatialize_chunk_predictions_overlapping_neighbors(
     mock_firestore_client, mock_storage_client
 ) -> None:
     event = http.CloudEvent(
-        {},
+        {
+            "type": "google.cloud.pubsub.topic.v1.messagePublished",
+            "source": "source",
+        },
         {
             "message": {
                 "data": base64.b64encode(
