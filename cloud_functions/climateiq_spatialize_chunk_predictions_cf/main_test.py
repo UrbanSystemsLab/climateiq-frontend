@@ -2,6 +2,7 @@ import base64
 import main
 import pytest
 
+from cloudevents import http
 from io import StringIO
 from google.cloud import firestore
 from google.cloud import storage
@@ -12,12 +13,14 @@ from typing import Any, Dict
 
 
 def test_spatialize_chunk_predictions_invalid_object_name() -> None:
-    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
-    event.data = {
-        "message": {
-            "data": base64.b64encode(b"invalid_name"),
-        }
-    }
+    event = http.CloudEvent(
+        {},
+        {
+            "message": {
+                "data": base64.b64encode(b"invalid_name"),
+            }
+        },
+    )
 
     with pytest.raises(ValueError) as exc_info:
         main.subscribe(event)
@@ -30,14 +33,16 @@ def test_spatialize_chunk_predictions_invalid_object_name() -> None:
 def test_spatialize_chunk_predictions_missing_study_area(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
-    event.data = {
-        "message": {
-            "data": base64.b64encode(
-                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
-            ),
-        }
-    }
+    event = http.CloudEvent(
+        {},
+        {
+            "message": {
+                "data": base64.b64encode(
+                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                ),
+            }
+        },
+    )
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -60,14 +65,16 @@ def test_spatialize_chunk_predictions_missing_study_area(
 def test_spatialize_chunk_predictions_invalid_study_area(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
-    event.data = {
-        "message": {
-            "data": base64.b64encode(
-                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
-            ),
-        }
-    }
+    event = http.CloudEvent(
+        {},
+        {
+            "message": {
+                "data": base64.b64encode(
+                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                ),
+            }
+        },
+    )
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -109,14 +116,16 @@ def test_spatialize_chunk_predictions_invalid_study_area(
 def test_spatialize_chunk_predictions_missing_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
-    event.data = {
-        "message": {
-            "data": base64.b64encode(
-                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
-            ),
-        }
-    }
+    event = http.CloudEvent(
+        {},
+        {
+            "message": {
+                "data": base64.b64encode(
+                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                ),
+            }
+        },
+    )
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -156,14 +165,16 @@ def test_spatialize_chunk_predictions_missing_chunk(
 def test_spatialize_chunk_predictions_invalid_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
-    event.data = {
-        "message": {
-            "data": base64.b64encode(
-                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
-            ),
-        }
-    }
+    event = http.CloudEvent(
+        {},
+        {
+            "message": {
+                "data": base64.b64encode(
+                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                ),
+            }
+        },
+    )
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -205,14 +216,16 @@ def test_spatialize_chunk_predictions_invalid_chunk(
 def test_spatialize_chunk_predictions_missing_predictions(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
-    event.data = {
-        "message": {
-            "data": base64.b64encode(
-                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
-            ),
-        }
-    }
+    event = http.CloudEvent(
+        {},
+        {
+            "message": {
+                "data": base64.b64encode(
+                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                ),
+            }
+        },
+    )
 
     # Build mock Storage object
     predictions = ""
@@ -255,14 +268,16 @@ def test_spatialize_chunk_predictions_missing_predictions(
 def test_spatialize_chunk_predictions_too_many_predictions(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
-    event.data = {
-        "message": {
-            "data": base64.b64encode(
-                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
-            ),
-        }
-    }
+    event = http.CloudEvent(
+        {},
+        {
+            "message": {
+                "data": base64.b64encode(
+                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                ),
+            }
+        },
+    )
 
     # Build mock Storage object
     predictions = (
@@ -305,14 +320,16 @@ def test_spatialize_chunk_predictions_too_many_predictions(
 def test_spatialize_chunk_predictions_missing_expected_neighbor_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
-    event.data = {
-        "message": {
-            "data": base64.b64encode(
-                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
-            ),
-        }
-    }
+    event = http.CloudEvent(
+        {},
+        {
+            "message": {
+                "data": base64.b64encode(
+                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                ),
+            }
+        },
+    )
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -359,14 +376,16 @@ def test_spatialize_chunk_predictions_missing_expected_neighbor_chunk(
 def test_spatialize_chunk_predictions_invalid_neighbor_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
-    event.data = {
-        "message": {
-            "data": base64.b64encode(
-                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
-            ),
-        }
-    }
+    event = http.CloudEvent(
+        {},
+        {
+            "message": {
+                "data": base64.b64encode(
+                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                ),
+            }
+        },
+    )
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -420,14 +439,16 @@ def test_spatialize_chunk_predictions_invalid_neighbor_chunk(
 def test_spatialize_chunk_predictions_neighbor_chunk_missing_predictions(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
-    event.data = {
-        "message": {
-            "data": base64.b64encode(
-                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
-            ),
-        }
-    }
+    event = http.CloudEvent(
+        {},
+        {
+            "message": {
+                "data": base64.b64encode(
+                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                ),
+            }
+        },
+    )
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -481,14 +502,16 @@ def test_spatialize_chunk_predictions_neighbor_chunk_missing_predictions(
 def test_spatialize_chunk_predictions_h3_centroids_within_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
-    event.data = {
-        "message": {
-            "data": base64.b64encode(
-                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
-            ),
-        }
-    }
+    event = http.CloudEvent(
+        {},
+        {
+            "message": {
+                "data": base64.b64encode(
+                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                ),
+            }
+        },
+    )
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -554,14 +577,16 @@ def test_spatialize_chunk_predictions_h3_centroids_within_chunk(
 def test_spatialize_chunk_predictions_h3_centroids_outside_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
-    event.data = {
-        "message": {
-            "data": base64.b64encode(
-                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
-            ),
-        }
-    }
+    event = http.CloudEvent(
+        {},
+        {
+            "message": {
+                "data": base64.b64encode(
+                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                ),
+            }
+        },
+    )
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3, 4, 5, 6], \
@@ -641,14 +666,16 @@ def test_spatialize_chunk_predictions_h3_centroids_outside_chunk(
 def test_spatialize_chunk_predictions_overlapping_neighbors(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
-    event.data = {
-        "message": {
-            "data": base64.b64encode(
-                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
-            ),
-        }
-    }
+    event = http.CloudEvent(
+        {},
+        {
+            "message": {
+                "data": base64.b64encode(
+                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                ),
+            }
+        },
+    )
 
     # Build mock Storage object
     predictions = (
