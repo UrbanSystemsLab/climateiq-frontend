@@ -36,7 +36,7 @@ jobs:
         flake8 cloud_functions/triggers --show-source --statistics
     - name: Ensure black auto-formatter has run
       run: |
-        black cloud_functions/trggers --check
+        black cloud_functions/triggers --check
     - name: Test with pytest
       run: |
         pytest cloud_functions/triggers
