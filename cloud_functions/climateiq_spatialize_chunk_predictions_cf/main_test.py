@@ -1,47 +1,43 @@
-from io import StringIO
+import base64
+import main
+import pytest
 
-from cloudevents import http
+from io import StringIO
 from google.cloud import firestore
 from google.cloud import storage
 import pandas as pd
 from pandas import testing as pd_testing
-import pytest
-import main
 from unittest import mock
 from typing import Any, Dict
 
 
-def test_export_model_predictions_invalid_object_name() -> None:
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
+def test_spatialize_chunk_predictions_invalid_object_name() -> None:
+    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
+    event.data = {
+        "message": {
+            "data": base64.b64encode(b"invalid_name"),
+        }
     }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "invalid_name",  # Invalid object name
-    }
-    event = http.CloudEvent(attributes, data)
 
     with pytest.raises(ValueError) as exc_info:
-        main.export_model_predictions(event)
+        main.subscribe(event)
 
     assert "Invalid object name format. Expected 5 components." in str(exc_info.value)
 
 
 @mock.patch.object(storage, "Client", autospec=True)
 @mock.patch.object(firestore, "Client", autospec=True)
-def test_export_model_predictions_missing_study_area(
+def test_spatialize_chunk_predictions_missing_study_area(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
+    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
+    event.data = {
+        "message": {
+            "data": base64.b64encode(
+                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+            ),
+        }
     }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "prediction-type/model-id/study-area-name/scenario-id/chunk-id",
-    }
-    event = http.CloudEvent(attributes, data)
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -54,25 +50,24 @@ def test_export_model_predictions_missing_study_area(
     ).get().exists = False  # Indicate study area doesn't exist
 
     with pytest.raises(ValueError) as exc_info:
-        main.export_model_predictions(event)
+        main.subscribe(event)
 
     assert 'Study area "study-area-name" does not exist' in str(exc_info.value)
 
 
 @mock.patch.object(storage, "Client", autospec=True)
 @mock.patch.object(firestore, "Client", autospec=True)
-def test_export_model_predictions_invalid_study_area(
+def test_spatialize_chunk_predictions_invalid_study_area(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
+    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
+    event.data = {
+        "message": {
+            "data": base64.b64encode(
+                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+            ),
+        }
     }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "prediction-type/model-id/study-area-name/scenario-id/chunk-id",
-    }
-    event = http.CloudEvent(attributes, data)
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -101,7 +96,7 @@ def test_export_model_predictions_invalid_study_area(
     )
 
     with pytest.raises(ValueError) as exc_info:
-        main.export_model_predictions(event)
+        main.subscribe(event)
 
     assert (
         'Study area "study-area-name" is missing one or more required '
@@ -111,18 +106,17 @@ def test_export_model_predictions_invalid_study_area(
 
 @mock.patch.object(storage, "Client", autospec=True)
 @mock.patch.object(firestore, "Client", autospec=True)
-def test_export_model_predictions_missing_chunk(
+def test_spatialize_chunk_predictions_missing_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
+    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
+    event.data = {
+        "message": {
+            "data": base64.b64encode(
+                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+            ),
+        }
     }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "prediction-type/model-id/study-area-name/scenario-id/chunk-id",
-    }
-    event = http.CloudEvent(attributes, data)
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -152,25 +146,24 @@ def test_export_model_predictions_missing_chunk(
     )
 
     with pytest.raises(ValueError) as exc_info:
-        main.export_model_predictions(event)
+        main.subscribe(event)
 
     assert 'Chunk "chunk-id" does not exist' in str(exc_info.value)
 
 
 @mock.patch.object(storage, "Client", autospec=True)
 @mock.patch.object(firestore, "Client", autospec=True)
-def test_export_model_predictions_invalid_chunk(
+def test_spatialize_chunk_predictions_invalid_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
+    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
+    event.data = {
+        "message": {
+            "data": base64.b64encode(
+                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+            ),
+        }
     }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "prediction-type/model-id/study-area-name/scenario-id/chunk-id",
-    }
-    event = http.CloudEvent(attributes, data)
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -199,7 +192,7 @@ def test_export_model_predictions_invalid_chunk(
     )
 
     with pytest.raises(ValueError) as exc_info:
-        main.export_model_predictions(event)
+        main.subscribe(event)
 
     assert (
         'Chunk "chunk-id" is missing one or more required '
@@ -209,18 +202,17 @@ def test_export_model_predictions_invalid_chunk(
 
 @mock.patch.object(storage, "Client", autospec=True)
 @mock.patch.object(firestore, "Client", autospec=True)
-def test_export_model_predictions_missing_predictions(
+def test_spatialize_chunk_predictions_missing_predictions(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
+    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
+    event.data = {
+        "message": {
+            "data": base64.b64encode(
+                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+            ),
+        }
     }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "prediction-type/model-id/study-area-name/scenario-id/chunk-id",
-    }
-    event = http.CloudEvent(attributes, data)
 
     # Build mock Storage object
     predictions = ""
@@ -250,7 +242,7 @@ def test_export_model_predictions_missing_predictions(
     )
 
     with pytest.raises(ValueError) as exc_info:
-        main.export_model_predictions(event)
+        main.subscribe(event)
 
     assert (
         "Predictions file: prediction-type/model-id/study-area-name/scenario-id/"
@@ -260,18 +252,17 @@ def test_export_model_predictions_missing_predictions(
 
 @mock.patch.object(storage, "Client", autospec=True)
 @mock.patch.object(firestore, "Client", autospec=True)
-def test_export_model_predictions_too_many_predictions(
+def test_spatialize_chunk_predictions_too_many_predictions(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
+    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
+    event.data = {
+        "message": {
+            "data": base64.b64encode(
+                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+            ),
+        }
     }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "prediction-type/model-id/study-area-name/scenario-id/chunk-id",
-    }
-    event = http.CloudEvent(attributes, data)
 
     # Build mock Storage object
     predictions = (
@@ -304,25 +295,24 @@ def test_export_model_predictions_too_many_predictions(
     )
 
     with pytest.raises(ValueError) as exc_info:
-        main.export_model_predictions(event)
+        main.subscribe(event)
 
     assert "Predictions file has too many predictions" in str(exc_info.value)
 
 
 @mock.patch.object(storage, "Client", autospec=True)
 @mock.patch.object(firestore, "Client", autospec=True)
-def test_export_model_predictions_missing_expected_neighbor_chunk(
+def test_spatialize_chunk_predictions_missing_expected_neighbor_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
+    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
+    event.data = {
+        "message": {
+            "data": base64.b64encode(
+                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+            ),
+        }
     }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "prediction-type/model-id/study-area-name/scenario-id/chunk-id",
-    }
-    event = http.CloudEvent(attributes, data)
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -357,7 +347,7 @@ def test_export_model_predictions_missing_expected_neighbor_chunk(
     ).where().where().limit().get().exists = False  # Neighbor chunks do not exist.
 
     with pytest.raises(ValueError) as exc_info:
-        main.export_model_predictions(event)
+        main.subscribe(event)
 
     assert "Neighbor chunk at index (0, 1) is missing from the study area" in str(
         exc_info.value
@@ -366,18 +356,17 @@ def test_export_model_predictions_missing_expected_neighbor_chunk(
 
 @mock.patch.object(storage, "Client", autospec=True)
 @mock.patch.object(firestore, "Client", autospec=True)
-def test_export_model_predictions_invalid_neighbor_chunk(
+def test_spatialize_chunk_predictions_invalid_neighbor_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
+    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
+    event.data = {
+        "message": {
+            "data": base64.b64encode(
+                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+            ),
+        }
     }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "prediction-type/model-id/study-area-name/scenario-id/chunk-id",
-    }
-    event = http.CloudEvent(attributes, data)
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -417,7 +406,7 @@ def test_export_model_predictions_invalid_neighbor_chunk(
     ).limit().get().to_dict.return_value = neighbor_metadata
 
     with pytest.raises(ValueError) as exc_info:
-        main.export_model_predictions(event)
+        main.subscribe(event)
 
     assert (
         "Neighbor chunk at index (0, 1) is missing one or more required fields: id,"
@@ -428,18 +417,17 @@ def test_export_model_predictions_invalid_neighbor_chunk(
 
 @mock.patch.object(storage, "Client", autospec=True)
 @mock.patch.object(firestore, "Client", autospec=True)
-def test_export_model_predictions_neighbor_chunk_missing_predictions(
+def test_spatialize_chunk_predictions_neighbor_chunk_missing_predictions(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
+    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
+    event.data = {
+        "message": {
+            "data": base64.b64encode(
+                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+            ),
+        }
     }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "prediction-type/model-id/study-area-name/scenario-id/chunk-id",
-    }
-    event = http.CloudEvent(attributes, data)
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -480,7 +468,7 @@ def test_export_model_predictions_neighbor_chunk_missing_predictions(
     ).limit().get().to_dict.return_value = neighbor_metadata
 
     with pytest.raises(ValueError) as exc_info:
-        main.export_model_predictions(event)
+        main.subscribe(event)
 
     assert (
         "Predictions file: prediction-type/model-id/study-area-name/scenario-id/"
@@ -490,18 +478,17 @@ def test_export_model_predictions_neighbor_chunk_missing_predictions(
 
 @mock.patch.object(storage, "Client", autospec=True)
 @mock.patch.object(firestore, "Client", autospec=True)
-def test_export_model_predictions_h3_centroids_within_chunk(
+def test_spatialize_chunk_predictions_h3_centroids_within_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
+    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
+    event.data = {
+        "message": {
+            "data": base64.b64encode(
+                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+            ),
+        }
     }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "prediction-type/model-id/study-area-name/scenario-id/chunk-id",
-    }
-    event = http.CloudEvent(attributes, data)
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
@@ -553,7 +540,7 @@ def test_export_model_predictions_h3_centroids_within_chunk(
     )
 
     with pytest.raises(NotImplementedError) as exc_info:
-        main.export_model_predictions(event)
+        main.subscribe(event)
 
     pd_testing.assert_series_equal(
         pd.read_json(StringIO(str(exc_info.value)), typ="series"),
@@ -564,18 +551,17 @@ def test_export_model_predictions_h3_centroids_within_chunk(
 
 @mock.patch.object(storage, "Client", autospec=True)
 @mock.patch.object(firestore, "Client", autospec=True)
-def test_export_model_predictions_h3_centroids_outside_chunk(
+def test_spatialize_chunk_predictions_h3_centroids_outside_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
+    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
+    event.data = {
+        "message": {
+            "data": base64.b64encode(
+                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+            ),
+        }
     }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "prediction-type/model-id/study-area-name/scenario-id/chunk-id",
-    }
-    event = http.CloudEvent(attributes, data)
 
     # Build mock Storage object
     predictions = '{"instance": [1], "prediction": [[1, 2, 3, 4, 5, 6], \
@@ -641,7 +627,7 @@ def test_export_model_predictions_h3_centroids_outside_chunk(
     )
 
     with pytest.raises(NotImplementedError) as exc_info:
-        main.export_model_predictions(event)
+        main.subscribe(event)
 
     pd_testing.assert_series_equal(
         pd.read_json(StringIO(str(exc_info.value)), typ="series"),
@@ -652,18 +638,17 @@ def test_export_model_predictions_h3_centroids_outside_chunk(
 
 @mock.patch.object(storage, "Client", autospec=True)
 @mock.patch.object(firestore, "Client", autospec=True)
-def test_export_model_predictions_overlapping_neighbors(
+def test_spatialize_chunk_predictions_overlapping_neighbors(
     mock_firestore_client, mock_storage_client
 ) -> None:
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
+    event = type("cloudevent", (object,), {"attributes": {}, "data": {}})
+    event.data = {
+        "message": {
+            "data": base64.b64encode(
+                b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+            ),
+        }
     }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "prediction-type/model-id/study-area-name/scenario-id/chunk-id",
-    }
-    event = http.CloudEvent(attributes, data)
 
     # Build mock Storage object
     predictions = (
@@ -780,7 +765,7 @@ def test_export_model_predictions_overlapping_neighbors(
     )
 
     with pytest.raises(NotImplementedError) as exc_info:
-        main.export_model_predictions(event)
+        main.subscribe(event)
 
     pd_testing.assert_series_equal(
         pd.read_json(StringIO(str(exc_info.value)), typ="series"),
