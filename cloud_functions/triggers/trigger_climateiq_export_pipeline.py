@@ -7,15 +7,15 @@ bucket_name = "climateiq-predictions"
 
 
 def publish_messages(prediction_type, model_id):
-    """Publishes Pub/Sub messages to the "climateiq-spatialize-and-export-predictions"
-    for every chunk, initiating the export pipeline that spatializes, transforms and
+    """Publishes Pub/Sub messages to the "climateiq-spatialize-and-export-predictions".
+
+    For each chunk, initiates the export pipeline that spatializes, transforms and
     exports predictions for visualization on the ClimateIQ dashboard.
 
     Args:
         prediction_type: The hazard type to export predictions for.
         model_id: The model version to export predictions from.
     """
-
     # Pub/Sub setup
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(project_id, topic_id)
