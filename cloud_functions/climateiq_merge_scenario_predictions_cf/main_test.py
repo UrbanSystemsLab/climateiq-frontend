@@ -159,7 +159,10 @@ def test_merge_scenario_predictions_missing_chunk_raises_error(
     ):
         result = main.merge_scenario_predictions(flask.request)
         assert result == (
-            "Not found: Missing predictions for run/flood/model/nyc/scenario1/chunk2.csv",
+            (
+                "Not found: Missing predictions for "
+                "run/flood/model/nyc/scenario1/chunk2.csv"
+            ),
             404,
         )
 
@@ -207,7 +210,10 @@ def test_merge_scenario_predictions_missing_scenario_raises_error(
     ):
         result = main.merge_scenario_predictions(flask.request)
         assert result == (
-            "Not found: Missing predictions for run/flood/model/nyc/scenario2/chunk1.csv",
+            (
+                "Not found: Missing predictions for "
+                "run/flood/model/nyc/scenario2/chunk1.csv"
+            ),
             404,
         )
 
