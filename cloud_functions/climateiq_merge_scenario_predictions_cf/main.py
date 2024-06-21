@@ -7,8 +7,8 @@ from google.cloud import storage
 import functions_framework
 
 
-# Bucket name, where prediction outputs are stored.
-BUCKET_NAME = "climateiq-predictions"
+# Bucket name, where spatialized prediction outputs are stored.
+BUCKET_NAME = "climateiq-spatialized-predictions"
 # File name pattern for the CSVs for each scenario and chunk.
 CHUNK_FILE_NAME_PATTERN = (
     r"(?P<run_id>\w+)/(?P<prediction_type>\w+)/(?P<model_id>\w+)/"
@@ -22,6 +22,14 @@ OUTPUT_DIR = "merged"
 # different chunks.
 @functions_framework.http
 def merge_scenario_predictions(request: flask.Request) -> tuple[str, int]:
+    """Merges predictions for each chunk across scenarios into single files per chunk.
+
+    Args:
+        request: A Flask request with the query parameters: run_id,
+            prediction_type, model_id, study_area_name.
+    Returns:
+        A tuple of the HTTP response (message, status_code).
+    """
     try:
         run_id, prediction_type, model_id, study_area_name = _get_args(
             request, ("run_id", "prediction_type", "model_id", "study_area_name")
@@ -50,7 +58,11 @@ def merge_scenario_predictions(request: flask.Request) -> tuple[str, int]:
                     f"{run_id}/{prediction_type}/{model_id}/"
                     f"{study_area_name}/{scenario_id}/{chunk_id}.csv"
                 )
-                for row in _get_file_content(bucket, object_name):
+                try:
+                    rows = _get_file_content(bucket, object_name)
+                except ValueError as error:
+                    return f"Not found: {error}", 404
+                for row in rows:
                     predictions_by_h3_index[row["h3_index"]][scenario_id] = row[
                         "prediction"
                     ]
@@ -64,6 +76,16 @@ def merge_scenario_predictions(request: flask.Request) -> tuple[str, int]:
 def _get_args(
     request: flask.Request, arg_names: collections.abc.Iterable[str]
 ) -> list[str]:
+    """Gets the args from the Flask request.
+
+    Args:
+        request: The request to get query args from.
+        arg_names: An Iterable of the names of the args to get.
+    Returns:
+        A list of the arg values ordered by arg_names.
+    Raises:
+        ValueError: If the query arg is not found in the request.
+    """
     args = []
     for arg_name in arg_names:
         arg_value = request.args.get(arg_name)
@@ -76,6 +98,17 @@ def _get_args(
 def _get_chunk_and_scenario_ids(
     blobs: list[storage.Blob],
 ) -> tuple[list[str], list[str]]:
+    """Gets the chunk_ids and scenario_ids from a list of Blobs.
+
+    We assume that every chunk_id and scenario_id combination is valid.
+
+    This ignores files which don't match the spatialized output file pattern.
+
+    Args:
+        blobs: List of Blobs to look through.
+    Returns:
+        A tuple of (chunk_ids, scenario_ids).
+    """
     chunk_ids = set()
     scenario_ids = set()
     for blob in blobs:
@@ -89,10 +122,22 @@ def _get_chunk_and_scenario_ids(
 
 
 def _get_file_content(bucket: storage.Bucket, object_name: str) -> list[dict]:
+    """Gets the content from a Blob.
+
+    Assumes Blob content is in CSV format with a header.
+
+    Args:
+        bucket: The GCS bucket the Blob is in.
+        object_name: The name of the Blob.
+    Returns:
+        Blob contents as a list of dict rows.
+    Raises:
+        ValueError: If the Blob doesn't exist.
+    """
     blob = bucket.blob(object_name)
-    # If the specific blob doesn't exist (i.e., no prediction for given scenario_id and
-    # chunk_id), then just skip it.
+    # If the specific blob doesn't exist (i.e., no predictions for given scenario_id and
+    # chunk_id), then raise an error.
     if not blob.exists():
-        return []
+        raise ValueError(f"Missing predictions for {object_name}")
     with blob.open() as fd:
         return list(csv.DictReader(fd))
