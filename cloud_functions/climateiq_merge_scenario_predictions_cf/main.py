@@ -8,14 +8,14 @@ import functions_framework
 
 
 # Bucket name, where spatialized prediction outputs are stored.
-BUCKET_NAME = "climateiq-spatialized-predictions"
+INPUT_BUCKET_NAME = "climateiq-spatialized-predictions"
+# Bucket name, where merged prediction outputs are stored.
+OUTPUT_BUCKET_NAME = "climateiq-merged-predictions"
 # File name pattern for the CSVs for each scenario and chunk.
 CHUNK_FILE_NAME_PATTERN = (
     r"(?P<run_id>\w+)/(?P<prediction_type>\w+)/(?P<model_id>\w+)/"
     r"(?P<study_area_name>\w+)/(?P<scenario_id>\w+)/(?P<chunk_id>\w+)\.csv"
 )
-# Directory in bucket to write merged files.
-OUTPUT_DIR = "merged"
 
 
 # This only handles merging flood data. Heat data will be divided into completely
@@ -38,17 +38,18 @@ def merge_scenario_predictions(request: flask.Request) -> tuple[str, int]:
         return f"Bad request: {error}", 400
 
     storage_client = storage.Client()
-    bucket = storage_client.bucket(BUCKET_NAME)
+    input_bucket = storage_client.bucket(INPUT_BUCKET_NAME)
+    output_bucket = storage_client.bucket(OUTPUT_BUCKET_NAME)
 
     blobs = storage_client.list_blobs(
-        BUCKET_NAME, f"{run_id}/{prediction_type}/{model_id}/{study_area_name}"
+        INPUT_BUCKET_NAME, f"{run_id}/{prediction_type}/{model_id}/{study_area_name}"
     )
     chunk_ids, scenario_ids = _get_chunk_and_scenario_ids(blobs)
     for chunk_id in chunk_ids:
         output_file_name = (
-            f"{OUTPUT_DIR}/{run_id}/{study_area_name}/{prediction_type}/{chunk_id}.csv"
+            f"{run_id}/{study_area_name}/{prediction_type}/{chunk_id}.csv"
         )
-        blob_to_write = bucket.blob(output_file_name)
+        blob_to_write = output_bucket.blob(output_file_name)
         with blob_to_write.open("w") as fd:
             writer = csv.DictWriter(fd, fieldnames=["h3_index"] + scenario_ids)
             writer.writeheader()
@@ -59,7 +60,7 @@ def merge_scenario_predictions(request: flask.Request) -> tuple[str, int]:
                     f"{study_area_name}/{scenario_id}/{chunk_id}.csv"
                 )
                 try:
-                    rows = _get_file_content(bucket, object_name)
+                    rows = _get_file_content(input_bucket, object_name)
                 except ValueError as error:
                     return f"Not found: {error}", 404
                 for row in rows:

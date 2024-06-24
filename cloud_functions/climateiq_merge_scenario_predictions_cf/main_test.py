@@ -1,6 +1,5 @@
 import re
 import tempfile
-import typing
 
 import flask
 from google.cloud import storage
@@ -16,74 +15,77 @@ def app():
     return flask.Flask(__name__)
 
 
-# Create a temporary directory for test files. Dir will be deleted after each test.
-@pytest.fixture(scope="module")
-def tmpdir():
-    return tempfile.TemporaryDirectory()
-
-
-def _create_chunk_file(h3_indices_to_predictions, tmpdir):
+def _create_chunk_file(
+    h3_indices_to_predictions: dict[str, float], tmp_path: str
+) -> str:
     rows = ["h3_index,prediction"] + [
         f"{h3_index},{prediction}"
         for h3_index, prediction in h3_indices_to_predictions.items()
     ]
-    tmpfile = tempfile.NamedTemporaryFile("w+", dir=tmpdir.name, delete=False)
-    tmpfile.write("\n".join(rows))
-    tmpfile.seek(0)
-    return tmpfile
+    with tempfile.NamedTemporaryFile("w+", dir=tmp_path, delete=False) as fd:
+        fd.write("\n".join(rows))
+    return fd.name
 
 
 def _create_mock_blob(
-    name: str, fd: typing.IO[typing.Any] | None = None, exists: bool = True
-):
+    name: str, tmp_file_path: str | None = None, exists: bool = True
+) -> mock.MagicMock:
     blob = mock.create_autospec(storage.Blob, instance=True)
     blob.name = name
-    blob.open.return_value = fd
+    if tmp_file_path:
+        blob.open.side_effect = lambda mode="r+": open(tmp_file_path, mode=mode)
     blob.exists.return_value = exists
     return blob
 
 
-def _create_mock_bucket(blobs: dict[str, mock.MagicMock]):
+def _create_mock_bucket(tmp_files: dict[str, str]) -> mock.MagicMock:
+    blobs = {
+        name: _create_mock_blob(name, tmp_file_path)
+        for name, tmp_file_path in tmp_files.items()
+    }
     bucket = mock.create_autospec(storage.Bucket, instance=True)
-    bucket.blob.side_effect = lambda name: (
-        blobs.get(name)
-        if name in blobs
-        else _create_mock_blob(name, fd=None, exists=False)
+    bucket.blob.side_effect = lambda name: blobs.get(
+        name, _create_mock_blob(name, tmp_file_path=None, exists=False)
     )
     return bucket
 
 
 @mock.patch.object(storage, "Client", autospec=True)
-def test_merge_scenario_predictions(mock_storage_client, tmpdir, app) -> None:
-    files = {
+def test_merge_scenario_predictions(mock_storage_client, tmp_path, app) -> None:
+    input_files = {
         "run/flood/model/nyc/scenario0/chunk0.csv": _create_chunk_file(
-            {"h300": 0.00, "h301": 0.01}, tmpdir
+            {"h300": 0.00, "h301": 0.01}, tmp_path
         ),
         "run/flood/model/nyc/scenario0/chunk1.csv": _create_chunk_file(
-            {"h310": 0.10, "h311": 0.11}, tmpdir
+            {"h310": 0.10, "h311": 0.11}, tmp_path
         ),
         # Chunk doesn't match file name pattern
         "run/flood/model/nyc/scenario0/ignore/chunk0.csv": _create_chunk_file(
-            {"h300": 0.99, "h301": 9.99}, tmpdir
+            {"h300": 0.99, "h301": 9.99}, tmp_path
         ),
         "run/flood/model/nyc/scenario1/chunk0.csv": _create_chunk_file(
-            {"h300": 1.00, "h301": 1.01}, tmpdir
+            {"h300": 1.00, "h301": 1.01}, tmp_path
         ),
         # Has extra h3 index
         "run/flood/model/nyc/scenario1/chunk1.csv": _create_chunk_file(
-            {"h310": 1.10, "h311": 1.11, "h312": 1.12}, tmpdir
-        ),
-        "merged/run/nyc/flood/chunk0.csv": tempfile.NamedTemporaryFile(
-            "w+", dir=tmpdir.name, delete=False
-        ),
-        "merged/run/nyc/flood/chunk1.csv": tempfile.NamedTemporaryFile(
-            "w+", dir=tmpdir.name, delete=False
+            {"h310": 1.10, "h311": 1.11, "h312": 1.12}, tmp_path
         ),
     }
-    blobs = {name: _create_mock_blob(name, file) for name, file in files.items()}
-    mock_storage_client().bucket.return_value = _create_mock_bucket(blobs)
+    input_bucket = _create_mock_bucket(input_files)
+
+    output_files = {
+        "run/nyc/flood/chunk0.csv": tmp_path / "merged_chunk0.csv",
+        "run/nyc/flood/chunk1.csv": tmp_path / "merged_chunk1.csv",
+    }
+    output_bucket = _create_mock_bucket(output_files)
+
+    mock_storage_client().bucket.side_effect = lambda bucket_name: (
+        input_bucket if bucket_name == main.INPUT_BUCKET_NAME else output_bucket
+    )
     mock_storage_client().list_blobs.side_effect = lambda _, prefix: [
-        blob for name, blob in blobs.items() if name.startswith(prefix)
+        _create_mock_blob(name, tmp_file_path)
+        for name, tmp_file_path in input_files.items()
+        if name.startswith(prefix)
     ]
     with app.test_request_context(
         query_string={
@@ -96,58 +98,59 @@ def test_merge_scenario_predictions(mock_storage_client, tmpdir, app) -> None:
         result = main.merge_scenario_predictions(flask.request)
         assert result == ("Success", 200)
 
-        expected_chunk0_contents = [
-            "h3_index,scenario0,scenario1\n",
-            "h300,0.0,1.0\n",
-            "h301,0.01,1.01\n",
-        ]
-        expected_chunk1_contents = [
-            "h3_index,scenario0,scenario1\n",
-            "h310,0.1,1.1\n",
-            "h311,0.11,1.11\n",
-            "h312,,1.12\n",
-        ]
-        with open(files["merged/run/nyc/flood/chunk0.csv"].name) as fd:
-            assert fd.readlines() == expected_chunk0_contents
-        with open(files["merged/run/nyc/flood/chunk1.csv"].name) as fd:
-            assert fd.readlines() == expected_chunk1_contents
+        expected_chunk0_contents = (
+            "h3_index,scenario0,scenario1\n" "h300,0.0,1.0\n" "h301,0.01,1.01\n"
+        )
+        expected_chunk1_contents = (
+            "h3_index,scenario0,scenario1\n"
+            "h310,0.1,1.1\n"
+            "h311,0.11,1.11\n"
+            "h312,,1.12\n"
+        )
+        with open(output_files["run/nyc/flood/chunk0.csv"]) as fd:
+            assert fd.read() == expected_chunk0_contents
+        with open(output_files["run/nyc/flood/chunk1.csv"]) as fd:
+            assert fd.read() == expected_chunk1_contents
 
 
 @mock.patch.object(storage, "Client", autospec=True)
 def test_merge_scenario_predictions_missing_chunk_raises_error(
-    mock_storage_client, tmpdir, app
+    mock_storage_client, tmp_path, app
 ) -> None:
-    files = {
+    input_files = {
         "run/flood/model/nyc/scenario0/chunk0.csv": _create_chunk_file(
-            {"h300": 0.00, "h301": 0.01}, tmpdir
+            {"h300": 0.00, "h301": 0.01}, tmp_path
         ),
         "run/flood/model/nyc/scenario0/chunk1.csv": _create_chunk_file(
-            {"h310": 0.10, "h311": 0.11}, tmpdir
+            {"h310": 0.10, "h311": 0.11}, tmp_path
         ),
         # Chunk only exists in one scenario
         "run/flood/model/nyc/scenario0/chunk2.csv": _create_chunk_file(
-            {"h320": 0.20, "h321": 0.21}, tmpdir
+            {"h320": 0.20, "h321": 0.21}, tmp_path
         ),
         "run/flood/model/nyc/scenario1/chunk0.csv": _create_chunk_file(
-            {"h300": 1.00, "h301": 1.01}, tmpdir
+            {"h300": 1.00, "h301": 1.01}, tmp_path
         ),
         "run/flood/model/nyc/scenario1/chunk1.csv": _create_chunk_file(
-            {"h310": 1.10, "h311": 1.11}, tmpdir
-        ),
-        "merged/run/nyc/flood/chunk0.csv": tempfile.NamedTemporaryFile(
-            "w+", dir=tmpdir.name, delete=False
-        ),
-        "merged/run/nyc/flood/chunk1.csv": tempfile.NamedTemporaryFile(
-            "w+", dir=tmpdir.name, delete=False
-        ),
-        "merged/run/nyc/flood/chunk2.csv": tempfile.NamedTemporaryFile(
-            "w+", dir=tmpdir.name, delete=False
+            {"h310": 1.10, "h311": 1.11}, tmp_path
         ),
     }
-    blobs = {name: _create_mock_blob(name, file) for name, file in files.items()}
-    mock_storage_client().bucket.return_value = _create_mock_bucket(blobs)
+    input_bucket = _create_mock_bucket(input_files)
+
+    output_files = {
+        "run/nyc/flood/chunk0.csv": tmp_path / "merged_chunk0.csv",
+        "run/nyc/flood/chunk1.csv": tmp_path / "merged_chunk1.csv",
+        "run/nyc/flood/chunk2.csv": tmp_path / "merged_chunk2.csv",
+    }
+    output_bucket = _create_mock_bucket(output_files)
+
+    mock_storage_client().bucket.side_effect = lambda bucket_name: (
+        input_bucket if bucket_name == main.INPUT_BUCKET_NAME else output_bucket
+    )
     mock_storage_client().list_blobs.side_effect = lambda _, prefix: [
-        blob for name, blob in blobs.items() if name.startswith(prefix)
+        _create_mock_blob(name, tmp_file_path)
+        for name, tmp_file_path in input_files.items()
+        if name.startswith(prefix)
     ]
     with app.test_request_context(
         query_string={
@@ -169,36 +172,41 @@ def test_merge_scenario_predictions_missing_chunk_raises_error(
 
 @mock.patch.object(storage, "Client", autospec=True)
 def test_merge_scenario_predictions_missing_scenario_raises_error(
-    mock_storage_client, tmpdir, app
+    mock_storage_client, tmp_path, app
 ) -> None:
-    files = {
+    input_files = {
         "run/flood/model/nyc/scenario0/chunk0.csv": _create_chunk_file(
-            {"h300": 0.00, "h301": 0.01}, tmpdir
+            {"h300": 0.00, "h301": 0.01}, tmp_path
         ),
         "run/flood/model/nyc/scenario0/chunk1.csv": _create_chunk_file(
-            {"h310": 0.10, "h311": 0.11}, tmpdir
+            {"h310": 0.10, "h311": 0.11}, tmp_path
         ),
         "run/flood/model/nyc/scenario1/chunk0.csv": _create_chunk_file(
-            {"h300": 1.00, "h301": 1.01}, tmpdir
+            {"h300": 1.00, "h301": 1.01}, tmp_path
         ),
         "run/flood/model/nyc/scenario1/chunk1.csv": _create_chunk_file(
-            {"h310": 1.10, "h311": 1.11}, tmpdir
+            {"h310": 1.10, "h311": 1.11}, tmp_path
         ),
         # Scenario only exists for one chunk
         "run/flood/model/nyc/scenario2/chunk0.csv": _create_chunk_file(
-            {"h300": 2.00, "h301": 2.01}, tmpdir
-        ),
-        "merged/run/nyc/flood/chunk0.csv": tempfile.NamedTemporaryFile(
-            "w+", dir=tmpdir.name, delete=False
-        ),
-        "merged/run/nyc/flood/chunk1.csv": tempfile.NamedTemporaryFile(
-            "w+", dir=tmpdir.name, delete=False
+            {"h300": 2.00, "h301": 2.01}, tmp_path
         ),
     }
-    blobs = {name: _create_mock_blob(name, file) for name, file in files.items()}
-    mock_storage_client().bucket.return_value = _create_mock_bucket(blobs)
+    input_bucket = _create_mock_bucket(input_files)
+
+    output_files = {
+        "run/nyc/flood/chunk0.csv": tmp_path / "merged_chunk0.csv",
+        "run/nyc/flood/chunk1.csv": tmp_path / "merged_chunk1.csv",
+    }
+    output_bucket = _create_mock_bucket(output_files)
+
+    mock_storage_client().bucket.side_effect = lambda bucket_name: (
+        input_bucket if bucket_name == main.INPUT_BUCKET_NAME else output_bucket
+    )
     mock_storage_client().list_blobs.side_effect = lambda _, prefix: [
-        blob for name, blob in blobs.items() if name.startswith(prefix)
+        _create_mock_blob(name, tmp_file_path)
+        for name, tmp_file_path in input_files.items()
+        if name.startswith(prefix)
     ]
     with app.test_request_context(
         query_string={
