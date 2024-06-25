@@ -71,7 +71,7 @@ def test_trigger_climateiq_export_pipeline(mock_storage_client, mock_publisher):
     def create_mock_blob(name, num):
         chunk_id = (num - 1) * 2 + 1
         predictions = "\n".join([
-            f'{{"instance": {{"values": [{i}], "key": chunk{chunk_id + i}}}, "prediction": [[1, 2, 3], [4, 5, 6]]}}'
+            f'{{"instance": {{"values": [{i}], "key": {chunk_id + i}}}, "prediction": [[1, 2, 3], [4, 5, 6]]}}'
             for i in range(2)
         ])
         mock_blob = MagicMock(spec=storage.Blob)
@@ -86,79 +86,75 @@ def test_trigger_climateiq_export_pipeline(mock_storage_client, mock_publisher):
     ]
     mock_storage_client.return_value.list_blobs.return_value = input_blobs
 
+
+    mock_publisher().topic_path.return_value = (
+        "projects/climateiq/topics/climateiq-spatialize-and-export-predictions"
+    )
+    mock_future = MagicMock()
+    mock_future.result.return_value = "message_id"
+    mock_publisher().publish.return_value = mock_future
+
     main.trigger_climateiq_export_pipeline(event)
 
     mock_publisher().publish.assert_has_calls(
     [
         call(
             "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-            data=b"id1/flood/v1.0/manhattan/extreme/chunk1",
+            data=b"id1/flood/v1.0/manhattan/extreme/1",
             origin="trigger_climateiq_export_pipeline_cf",
         ),
         call().result(),
         call(
             "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-            data=b"id1/flood/v1.0/manhattan/extreme/chunk2",
+            data=b"id1/flood/v1.0/manhattan/extreme/2",
             origin="trigger_climateiq_export_pipeline_cf",
         ),
         call().result(),
         call(
             "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-            data=b"id1/flood/v1.0/manhattan/extreme/chunk3",
+            data=b"id1/flood/v1.0/manhattan/extreme/3",
             origin="trigger_climateiq_export_pipeline_cf",
         ),
         call().result(),
         call(
             "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-            data=b"id1/flood/v1.0/manhattan/extreme/chunk4",
+            data=b"id1/flood/v1.0/manhattan/extreme/4",
             origin="trigger_climateiq_export_pipeline_cf",
         ),
         call().result(),
         call(
             "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-            data=b"id1/flood/v1.0/manhattan/extreme/chunk5",
+            data=b"id1/flood/v1.0/manhattan/extreme/5",
             origin="trigger_climateiq_export_pipeline_cf",
         ),
         call().result(),
         call(
             "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-            data=b"id1/flood/v1.0/manhattan/extreme/chunk6",
+            data=b"id1/flood/v1.0/manhattan/extreme/6",
             origin="trigger_climateiq_export_pipeline_cf",
         ),
         call().result(),
         call(
             "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-            data=b"id1/flood/v1.0/manhattan/extreme/chunk7",
+            data=b"id1/flood/v1.0/manhattan/extreme/7",
             origin="trigger_climateiq_export_pipeline_cf",
         ),
         call().result(),
         call(
             "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-            data=b"id1/flood/v1.0/manhattan/extreme/chunk8",
+            data=b"id1/flood/v1.0/manhattan/extreme/8",
             origin="trigger_climateiq_export_pipeline_cf",
         ),
         call().result(),
         call(
             "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-            data=b"id1/flood/v1.0/manhattan/extreme/chunk9",
+            data=b"id1/flood/v1.0/manhattan/extreme/9",
             origin="trigger_climateiq_export_pipeline_cf",
         ),
         call().result(),
         call(
             "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-            data=b"id1/flood/v1.0/manhattan/extreme/chunk10",
-            origin="trigger_climateiq_export_pipeline_cf",
-        ),
-        call().result(),
-        call(
-            "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-            data=b"id1/flood/v1.0/manhattan/extreme/chunk11",
-            origin="trigger_climateiq_export_pipeline_cf",
-        ),
-        call().result(),
-        call(
-            "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-            data=b"id1/flood/v1.0/manhattan/extreme/chunk12",
+            data=b"id1/flood/v1.0/manhattan/extreme/10",
             origin="trigger_climateiq_export_pipeline_cf",
         ),
         call().result(),
