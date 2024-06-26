@@ -1,7 +1,8 @@
 import functions_framework
 import pathlib
 import json
-from google.cloud import storage, pubsub_v1
+
+from google import cloud
 from cloudevents import http
 
 CLIMATEIQ_PREDICTIONS_BUCKET = "climateiq-predictions"
@@ -45,7 +46,7 @@ def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
     total_prediction_files = int(file_count)
 
     # Retrieve all input prediction files.
-    storage_client = storage.Client()
+    storage_client = cloud.storage.Client()
     input_blobs = storage_client.list_blobs(
         CLIMATEIQ_PREDICTIONS_BUCKET,
         prefix=f"{id}/{prediction_type}/{model_id}/{study_area_name}/{scenario_id}",
@@ -74,7 +75,7 @@ def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
 
     # Once all output files have been written, publish pubsub message per chunk to kick
     # off export pipeline.
-    publisher = pubsub_v1.PublisherClient()
+    publisher = cloud.pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(
         CLIMATEIQ_PROJECT_ID, CLIMATEIQ_EXPORT_PIPELINE_TOPIC_ID
     )

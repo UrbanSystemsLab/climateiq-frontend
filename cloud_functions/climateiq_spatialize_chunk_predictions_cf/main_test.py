@@ -1,15 +1,14 @@
 import base64
 import main
 import pytest
+import pandas as pd
 
 from cloudevents import http
 from io import StringIO
-from google.cloud import firestore
-from google.cloud import storage
-import pandas as pd
 from pandas import testing as pd_testing
 from unittest import mock
 from typing import Any, Dict
+from google.cloud import storage, firestore
 
 
 def test_spatialize_chunk_predictions_invalid_object_name() -> None:

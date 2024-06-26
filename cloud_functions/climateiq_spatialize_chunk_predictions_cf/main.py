@@ -1,17 +1,16 @@
 import base64
 import json
-
-from typing import Any
-from cloudevents import http
-import functions_framework
-import geopandas as gpd
-from google.cloud import firestore
-from google.cloud import storage
-from shapely import geometry
-from h3 import h3
 import pandas as pd
 import pathlib
 import numpy as np
+import functions_framework
+import geopandas as gpd
+
+from typing import Any
+from cloudevents import http
+from google import cloud
+from shapely import geometry
+from h3 import h3
 
 CLIMATEIQ_CHUNK_PREDICTIONS_BUCKET = "climateiq-chunk-predictions"
 GLOBAL_CRS = "EPSG:4326"
@@ -86,7 +85,7 @@ def _read_chunk_predictions(object_name: str) -> np.ndarray:
     Raises:
         ValueError: If the predictions file format is invalid.
     """
-    storage_client = storage.Client()
+    storage_client = cloud.storage.Client()
     bucket = storage_client.bucket(CLIMATEIQ_CHUNK_PREDICTIONS_BUCKET)
     blob = bucket.blob(object_name)
 
@@ -150,7 +149,7 @@ def _get_study_area_metadata(
         missing required fields.
     """
     # TODO: Consider refactoring this to use library from climateiq-cnn repo.
-    db = firestore.Client()
+    db = cloud.firestore.Client()
 
     study_area_ref = db.collection(STUDY_AREAS_ID).document(study_area_name)
     chunks_ref = study_area_ref.collection(CHUNKS_ID)

@@ -1,8 +1,9 @@
 import main
 import pytest
-from google.cloud import storage, pubsub_v1
-from unittest.mock import patch, MagicMock, call
+
+from unittest import mock
 from cloudevents import http
+from google.cloud import storage, pubsub_v1
 
 
 def test_trigger_export_pipeline_invalid_object_name():
@@ -26,8 +27,8 @@ def test_trigger_export_pipeline_invalid_object_name():
     )
 
 
-@patch.object(pubsub_v1, "PublisherClient", autospec=True)
-@patch.object(storage, "Client", autospec=True)
+@mock.patch.object(pubsub_v1, "PublisherClient", autospec=True)
+@mock.patch.object(storage, "Client", autospec=True)
 def test_trigger_export_pipeline_missing_prediction_files(
     mock_storage_client, mock_publisher
 ):
@@ -63,8 +64,8 @@ def test_trigger_export_pipeline_missing_prediction_files(
     mock_publisher().topic_path.assert_not_called()
 
 
-@patch.object(pubsub_v1, "PublisherClient", autospec=True)
-@patch.object(storage, "Client", autospec=True)
+@mock.patch.object(pubsub_v1, "PublisherClient", autospec=True)
+@mock.patch.object(storage, "Client", autospec=True)
 def test_trigger_export_pipeline(mock_storage_client, mock_publisher):
     attributes = {
         "type": "google.cloud.storage.object.v1.finalized",
@@ -86,9 +87,9 @@ def test_trigger_export_pipeline(mock_storage_client, mock_publisher):
                 for i in range(2)
             ]
         )
-        mock_blob = MagicMock(spec=storage.Blob)
+        mock_blob = mock.MagicMock(spec=storage.Blob)
         mock_blob.name = name
-        mock_file = MagicMock()
+        mock_file = mock.MagicMock()
         mock_file.__enter__.return_value = predictions.splitlines()
         mock_blob.open.return_value = mock_file
         return mock_blob
@@ -105,14 +106,14 @@ def test_trigger_export_pipeline(mock_storage_client, mock_publisher):
     mock_publisher().topic_path.return_value = (
         "projects/climateiq/topics/climateiq-spatialize-and-export-predictions"
     )
-    mock_future = MagicMock()
+    mock_future = mock.MagicMock()
     mock_future.result.return_value = "message_id"
     mock_publisher().publish.return_value = mock_future
 
     # Output blobs setup
     mock_output_blobs = {}
     mock_storage_client().bucket("").blob.side_effect = (
-        lambda name: mock_output_blobs.setdefault(name, MagicMock())
+        lambda name: mock_output_blobs.setdefault(name, mock.MagicMock())
     )
 
     main.trigger_export_pipeline(event)
@@ -136,12 +137,12 @@ def test_trigger_export_pipeline(mock_storage_client, mock_publisher):
         message
         for i in range(1, 11)
         for message in (
-            call(
+            mock.call(
                 expected_topic_name,
                 data=f"id1/flood/v1.0/manhattan/extreme/{i}".encode(),
                 origin=expected_origin,
             ),
-            call().result(),
+            mock.call().result(),
         )
     ]
     mock_publisher().publish.assert_has_calls(expected_calls)
