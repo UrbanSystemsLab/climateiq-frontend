@@ -28,7 +28,11 @@ def test_spatialize_chunk_predictions_invalid_object_name() -> None:
     with pytest.raises(ValueError) as exc_info:
         main.subscribe(event)
 
-    assert "Invalid object name format. Expected 5 components." in str(exc_info.value)
+    assert (
+        "Invalid object name format. Expected format: '<id>/<prediction_type>/"
+        "<model_id>/<study_area_name>/<scenario_id>/<chunk_id>'"
+        in str(exc_info.value)
+    )
 
 
 @mock.patch.object(storage, "Client", autospec=True)
@@ -44,7 +48,7 @@ def test_spatialize_chunk_predictions_missing_study_area(
         {
             "message": {
                 "data": base64.b64encode(
-                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                    b"id/prediction-type/model-id/study-area-name/scenario-id/chunk-id"
                 ),
             }
         },
@@ -79,7 +83,7 @@ def test_spatialize_chunk_predictions_invalid_study_area(
         {
             "message": {
                 "data": base64.b64encode(
-                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                    b"id/prediction-type/model-id/study-area-name/scenario-id/chunk-id"
                 ),
             }
         },
@@ -133,7 +137,7 @@ def test_spatialize_chunk_predictions_missing_chunk(
         {
             "message": {
                 "data": base64.b64encode(
-                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                    b"id/prediction-type/model-id/study-area-name/scenario-id/chunk-id"
                 ),
             }
         },
@@ -185,7 +189,7 @@ def test_spatialize_chunk_predictions_invalid_chunk(
         {
             "message": {
                 "data": base64.b64encode(
-                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                    b"id/prediction-type/model-id/study-area-name/scenario-id/chunk-id"
                 ),
             }
         },
@@ -239,7 +243,7 @@ def test_spatialize_chunk_predictions_missing_predictions(
         {
             "message": {
                 "data": base64.b64encode(
-                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                    b"id/prediction-type/model-id/study-area-name/scenario-id/chunk-id"
                 ),
             }
         },
@@ -276,7 +280,7 @@ def test_spatialize_chunk_predictions_missing_predictions(
         main.subscribe(event)
 
     assert (
-        "Predictions file: prediction-type/model-id/study-area-name/scenario-id/"
+        "Predictions file: id/prediction-type/model-id/study-area-name/scenario-id/"
         "chunk-id is missing." in str(exc_info.value)
     )
 
@@ -294,7 +298,7 @@ def test_spatialize_chunk_predictions_too_many_predictions(
         {
             "message": {
                 "data": base64.b64encode(
-                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                    b"id/prediction-type/model-id/study-area-name/scenario-id/chunk-id"
                 ),
             }
         },
@@ -349,7 +353,7 @@ def test_spatialize_chunk_predictions_missing_expected_neighbor_chunk(
         {
             "message": {
                 "data": base64.b64encode(
-                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                    b"id/prediction-type/model-id/study-area-name/scenario-id/chunk-id"
                 ),
             }
         },
@@ -408,7 +412,7 @@ def test_spatialize_chunk_predictions_invalid_neighbor_chunk(
         {
             "message": {
                 "data": base64.b64encode(
-                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                    b"id/prediction-type/model-id/study-area-name/scenario-id/chunk-id"
                 ),
             }
         },
@@ -474,7 +478,7 @@ def test_spatialize_chunk_predictions_neighbor_chunk_missing_predictions(
         {
             "message": {
                 "data": base64.b64encode(
-                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                    b"id/prediction-type/model-id/study-area-name/scenario-id/chunk-id"
                 ),
             }
         },
@@ -522,7 +526,7 @@ def test_spatialize_chunk_predictions_neighbor_chunk_missing_predictions(
         main.subscribe(event)
 
     assert (
-        "Predictions file: prediction-type/model-id/study-area-name/scenario-id/"
+        "Predictions file: id/prediction-type/model-id/study-area-name/scenario-id/"
         "neighbor-chunk-id is missing."
     ) in str(exc_info.value)
 
@@ -540,7 +544,7 @@ def test_spatialize_chunk_predictions_h3_centroids_within_chunk(
         {
             "message": {
                 "data": base64.b64encode(
-                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                    b"id/prediction-type/model-id/study-area-name/scenario-id/chunk-id"
                 ),
             }
         },
@@ -618,7 +622,7 @@ def test_spatialize_chunk_predictions_h3_centroids_outside_chunk(
         {
             "message": {
                 "data": base64.b64encode(
-                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                    b"id/prediction-type/model-id/study-area-name/scenario-id/chunk-id"
                 ),
             }
         },
@@ -710,7 +714,7 @@ def test_spatialize_chunk_predictions_overlapping_neighbors(
         {
             "message": {
                 "data": base64.b64encode(
-                    b"prediction-type/model-id/study-area-name/scenario-id/chunk-id"
+                    b"id/prediction-type/model-id/study-area-name/scenario-id/chunk-id"
                 ),
             }
         },

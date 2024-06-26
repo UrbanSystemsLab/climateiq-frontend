@@ -1,24 +1,24 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: trigger_climateiq_export_pipeline_cf
+name: climateiq_trigger_export_pipeline_cf
 
 on:
   push:
     branches: [ "main" ]
     paths:
-      - "cloud_functions/trigger_climateiq_export_pipeline_cf/**"
+      - "cloud_functions/climateiq_trigger_export_pipeline_cf/**"
   pull_request:
     branches: [ "main" ]
     paths:
-      - "cloud_functions/trigger_climateiq_export_pipeline_cf/**"
+      - "cloud_functions/climateiq_trigger_export_pipeline_cf/**"
 
 permissions:
   contents: read
 
 jobs:
-  trigger_climateiq_export_pipeline_cf:
-    name: trigger_climateiq_export_pipeline CI
+  climateiq_trigger_export_pipeline_cf:
+    name: climateiq_trigger_export_pipeline CI
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -29,17 +29,17 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        cd cloud_functions/trigger_climateiq_export_pipeline_cf
+        cd cloud_functions/climateiq_trigger_export_pipeline_cf
         pip install -r requirements.txt
     - name: Lint with flake8
       run: |
-        flake8 cloud_functions/trigger_climateiq_export_pipeline_cf --show-source --statistics
+        flake8 cloud_functions/climateiq_trigger_export_pipeline_cf --show-source --statistics
     - name: Ensure black auto-formatter has run
       run: |
-        black cloud_functions/trigger_climateiq_export_pipeline_cf --check
+        black cloud_functions/climateiq_trigger_export_pipeline_cf --check
     - name: Test with pytest
       run: |
-        pytest cloud_functions/trigger_climateiq_export_pipeline_cf
+        pytest cloud_functions/climateiq_trigger_export_pipeline_cf
     - name: MyPy Type Checking
       run: |
-        mypy cloud_functions/trigger_climateiq_export_pipeline_cf
+        mypy cloud_functions/climateiq_trigger_export_pipeline_cf

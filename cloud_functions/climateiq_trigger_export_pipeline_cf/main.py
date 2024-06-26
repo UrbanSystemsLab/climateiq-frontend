@@ -11,7 +11,7 @@ CLIMATEIQ_EXPORT_PIPELINE_TOPIC_ID = "climateiq-spatialize-and-export-prediction
 
 
 @functions_framework.cloud_event
-def trigger_climateiq_export_pipeline(cloud_event: http.CloudEvent) -> None:
+def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
     """Triggered by writes to the "climateiq-predictions" bucket.
 
     Splits predictions into one file per chunk and kicks off
@@ -21,7 +21,7 @@ def trigger_climateiq_export_pipeline(cloud_event: http.CloudEvent) -> None:
     Additionally, the climateiq_spatialize_chunk_predictions cloud function is
     only triggered once all prediction files per chunk are written since data
     from neighboring chunks is required for spatializiation.
-    
+
     Args:
         cloud_event: The CloudEvent representing the storage event.
 
@@ -36,7 +36,9 @@ def trigger_climateiq_export_pipeline(cloud_event: http.CloudEvent) -> None:
     path = pathlib.PurePosixPath(object_name)
     if len(path.parts) != 6:
         raise ValueError(
-            "Invalid object name format. Expected format: '<id>/<prediction_type>/<model_id>/<study_area_name>/<scenario_id>/prediction.results-<file_number>-of-{number_of_files_generated}'"
+            "Invalid object name format. Expected format: '<id>/<prediction_type>/"
+            "<model_id>/<study_area_name>/<scenario_id>/prediction.results-"
+            "<file_number>-of-{number_of_files_generated}'"
         )
     id, prediction_type, model_id, study_area_name, scenario_id, filename = path.parts
     _, _, _, file_count = filename.split("-")
@@ -60,7 +62,8 @@ def trigger_climateiq_export_pipeline(cloud_event: http.CloudEvent) -> None:
         with blob.open() as fd:
             for line in fd:
                 chunk_id = json.loads(line)["instance"]["key"]
-                output_filename = f"{id}/{prediction_type}/{model_id}/{study_area_name}/{scenario_id}/{chunk_id}"
+                output_filename = f"{id}/{prediction_type}/{model_id}/"
+                f"{study_area_name}/{scenario_id}/{chunk_id}"
                 output_files.append(output_filename)
                 output_blob = storage_client.bucket(
                     CLIMATEIQ_CHUNK_PREDICTIONS_BUCKET

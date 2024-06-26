@@ -13,7 +13,7 @@ import pandas as pd
 import pathlib
 import numpy as np
 
-CLIMATEIQ_PREDICTIONS_BUCKET = "climateiq-predictions"
+CLIMATEIQ_CHUNK_PREDICTIONS_BUCKET = "climateiq-chunk-predictions"
 GLOBAL_CRS = "EPSG:4326"
 # CAUTION: Changing the H3 cell size may require updates to how many/which neighboring
 # chunks we process.
@@ -30,9 +30,7 @@ def subscribe(cloud_event: http.CloudEvent) -> None:
     CSV file containing H3 indexes along with associated predictions.
 
     Args:
-        cloud_event: The CloudEvent representing the Pub/Sub message. The name
-        of the object should conform to the following pattern:
-        "<prediction_type>/<model_id>/<study_area_name>/<scenario_id>/<chunk_id>"
+        cloud_event: The CloudEvent representing the Pub/Sub message.
 
     Raises:
         ValueError: If the object name format, study area metadata, chunk / neighbor
@@ -44,10 +42,13 @@ def subscribe(cloud_event: http.CloudEvent) -> None:
 
     # Extract components from the object name.
     path = pathlib.PurePosixPath(object_name)
-    if len(path.parts) != 5:
-        raise ValueError("Invalid object name format. Expected 5 components.")
+    if len(path.parts) != 6:
+        raise ValueError(
+            "Invalid object name format. Expected format: '<id>/<prediction_type>/"
+            "<model_id>/<study_area_name>/<scenario_id>/<chunk_id>'"
+        )
 
-    prediction_type, model_id, study_area_name, scenario_id, chunk_id = path.parts
+    id, prediction_type, model_id, study_area_name, scenario_id, chunk_id = path.parts
 
     predictions = _read_chunk_predictions(object_name)
     study_area_metadata, chunks_ref = _get_study_area_metadata(study_area_name)
@@ -86,14 +87,13 @@ def _read_chunk_predictions(object_name: str) -> np.ndarray:
         ValueError: If the predictions file format is invalid.
     """
     storage_client = storage.Client()
-    bucket = storage_client.bucket(CLIMATEIQ_PREDICTIONS_BUCKET)
+    bucket = storage_client.bucket(CLIMATEIQ_CHUNK_PREDICTIONS_BUCKET)
     blob = bucket.blob(object_name)
 
     with blob.open() as fd:
         fd_iter = iter(fd)
         line = next(fd_iter, None)
-        # Vertex AI will output one predictions file per chunk so the file is
-        # expected to contain only one prediction.
+        # The file is expected to contain only one prediction.
         if line is None:
             raise ValueError(f"Predictions file: {object_name} is missing.")
 
@@ -123,8 +123,11 @@ def _read_neighbor_chunk_predictions(
         ValueError: If the predictions file format is invalid.
     """
     path = pathlib.PurePosixPath(object_name)
-    if len(path.parts) != 5:
-        raise ValueError("Invalid object name format. Expected 5 components.")
+    if len(path.parts) != 6:
+        raise ValueError(
+            "Invalid object name format. Expected format: '<id>/<prediction_type>/"
+            "<model_id>/<study_area_name>/<scenario_id>/<chunk_id>"
+        )
     *prefix, current_chunk_id = path.parts
     neighbor_object_name = pathlib.PurePosixPath(*prefix, neighbor_chunk_id)
     return _read_chunk_predictions(str(neighbor_object_name))
