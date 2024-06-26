@@ -57,7 +57,7 @@ def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
         return
 
     # Split predictions into one file per chunk and output to GCS.
-    output_files = []
+    output_filenames = []
     for blob in input_blobs:
         with blob.open() as fd:
             for line in fd:
@@ -66,7 +66,7 @@ def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
                     f"{id}/{prediction_type}/{model_id}/"
                     f"{study_area_name}/{scenario_id}/{chunk_id}"
                 )
-                output_files.append(output_filename)
+                output_filenames.append(output_filename)
                 output_blob = storage_client.bucket(
                     CLIMATEIQ_CHUNK_PREDICTIONS_BUCKET
                 ).blob(output_filename)
@@ -78,10 +78,10 @@ def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
     topic_path = publisher.topic_path(
         CLIMATEIQ_PROJECT_ID, CLIMATEIQ_EXPORT_PIPELINE_TOPIC_ID
     )
-    for output_file in output_files:
+    for output_filename in output_filenames:
         future = publisher.publish(
             topic_path,
-            data=output_file.encode("utf-8"),
+            data=output_filename.encode("utf-8"),
             origin="climateiq_trigger_export_pipeline_cf",
         )
         future.result()

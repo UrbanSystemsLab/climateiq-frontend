@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   climateiq_trigger_export_pipeline_cf:
-    name: climateiq_trigger_export_pipeline CI
+    name: climateiq_trigger_export_pipeline_cf CI
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4

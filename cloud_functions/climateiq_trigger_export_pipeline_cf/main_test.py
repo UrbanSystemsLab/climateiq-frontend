@@ -41,6 +41,7 @@ def test_trigger_export_pipeline_missing_prediction_files(
     }
     event = http.CloudEvent(attributes, data)
 
+    # Missing predictions for chunks 2 and 4.
     input_blobs = [
         storage.Blob(
             name="id1/flood/v1.0/manhattan/extreme/prediction.results-1-of-5",
@@ -75,9 +76,9 @@ def test_trigger_export_pipeline(mock_storage_client, mock_publisher):
     }
     event = http.CloudEvent(attributes, data)
 
-    # Create 5 mock blobs with predictions for 2 chunks each
-    def create_mock_blob(name, num):
-        chunk_id = (num - 1) * 2 + 1
+    # Input blobs setup
+    def create_mock_input_blob(name, start_chunk_id):
+        chunk_id = (start_chunk_id - 1) * 2 + 1
         predictions = "\n".join(
             [
                 f'{{"instance": {{"values": [{i}], "key": {chunk_id + i}}},'
@@ -93,13 +94,14 @@ def test_trigger_export_pipeline(mock_storage_client, mock_publisher):
         return mock_blob
 
     input_blobs = [
-        create_mock_blob(
+        create_mock_input_blob(
             f"id1/flood/v1.0/manhattan/extreme/prediction.results-{i}-of-5", i
         )
         for i in range(1, 6)
     ]
-    mock_storage_client.return_value.list_blobs.return_value = input_blobs
+    mock_storage_client().list_blobs.return_value = input_blobs
 
+    # Publisher setup
     mock_publisher().topic_path.return_value = (
         "projects/climateiq/topics/climateiq-spatialize-and-export-predictions"
     )
@@ -107,69 +109,39 @@ def test_trigger_export_pipeline(mock_storage_client, mock_publisher):
     mock_future.result.return_value = "message_id"
     mock_publisher().publish.return_value = mock_future
 
+    # Output blobs setup
+    mock_output_blobs = {}
+    mock_storage_client().bucket("").blob.side_effect = (
+        lambda name: mock_output_blobs.setdefault(name, MagicMock())
+    )
+
     main.trigger_export_pipeline(event)
 
-    mock_publisher().publish.assert_has_calls(
-        [
-            call(
-                "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-                data=b"id1/flood/v1.0/manhattan/extreme/1",
-                origin="climateiq_trigger_export_pipeline_cf",
-            ),
-            call().result(),
-            call(
-                "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-                data=b"id1/flood/v1.0/manhattan/extreme/2",
-                origin="climateiq_trigger_export_pipeline_cf",
-            ),
-            call().result(),
-            call(
-                "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-                data=b"id1/flood/v1.0/manhattan/extreme/3",
-                origin="climateiq_trigger_export_pipeline_cf",
-            ),
-            call().result(),
-            call(
-                "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-                data=b"id1/flood/v1.0/manhattan/extreme/4",
-                origin="climateiq_trigger_export_pipeline_cf",
-            ),
-            call().result(),
-            call(
-                "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-                data=b"id1/flood/v1.0/manhattan/extreme/5",
-                origin="climateiq_trigger_export_pipeline_cf",
-            ),
-            call().result(),
-            call(
-                "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-                data=b"id1/flood/v1.0/manhattan/extreme/6",
-                origin="climateiq_trigger_export_pipeline_cf",
-            ),
-            call().result(),
-            call(
-                "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-                data=b"id1/flood/v1.0/manhattan/extreme/7",
-                origin="climateiq_trigger_export_pipeline_cf",
-            ),
-            call().result(),
-            call(
-                "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-                data=b"id1/flood/v1.0/manhattan/extreme/8",
-                origin="climateiq_trigger_export_pipeline_cf",
-            ),
-            call().result(),
-            call(
-                "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-                data=b"id1/flood/v1.0/manhattan/extreme/9",
-                origin="climateiq_trigger_export_pipeline_cf",
-            ),
-            call().result(),
-            call(
-                "projects/climateiq/topics/climateiq-spatialize-and-export-predictions",
-                data=b"id1/flood/v1.0/manhattan/extreme/10",
-                origin="climateiq_trigger_export_pipeline_cf",
-            ),
-            call().result(),
-        ]
+    # Confirm output blobs written
+    for i in range(1, 11):
+        expected_blob_name = f"id1/flood/v1.0/manhattan/extreme/{i}"
+        output_blob = mock_output_blobs[expected_blob_name]
+        expected_data = (
+            f'{{"instance": {{"values": [{(i - 1) % 2}], "key": {i}}},'
+            f'"prediction": [[1, 2, 3], [4, 5, 6]]}}'
+        )
+        output_blob.upload_from_string.assert_called_with(expected_data)
+
+    # Confirm messages published
+    expected_topic_name = (
+        "projects/climateiq/topics/climateiq-spatialize-and-export-predictions"
     )
+    expected_origin = "climateiq_trigger_export_pipeline_cf"
+    expected_calls = [
+        message
+        for i in range(1, 11)
+        for message in (
+            call(
+                expected_topic_name,
+                data=f"id1/flood/v1.0/manhattan/extreme/{i}".encode(),
+                origin=expected_origin,
+            ),
+            call().result(),
+        )
+    ]
+    mock_publisher().publish.assert_has_calls(expected_calls)
