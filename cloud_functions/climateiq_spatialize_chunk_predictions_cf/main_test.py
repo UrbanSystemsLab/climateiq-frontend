@@ -54,7 +54,10 @@ def test_spatialize_chunk_predictions_missing_study_area(
     )
 
     # Build mock Storage object
-    predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
+    predictions = (
+        '{"instance": {"values": [1, 2, 3, 4], "key": 1},'
+        '"prediction": [[1, 2, 3], [4, 5, 6]]}'
+    )
     with mock_storage_client().bucket("").blob("").open() as mock_fd:
         mock_fd.__iter__.return_value = [predictions]
 
@@ -89,7 +92,10 @@ def test_spatialize_chunk_predictions_invalid_study_area(
     )
 
     # Build mock Storage object
-    predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
+    predictions = (
+        '{"instance": {"values": [1, 2, 3, 4], "key": 1},'
+        '"prediction": [[1, 2, 3], [4, 5, 6]]}'
+    )
     with mock_storage_client().bucket("").blob("").open() as mock_fd:
         mock_fd.__iter__.return_value = [predictions]
 
@@ -143,7 +149,10 @@ def test_spatialize_chunk_predictions_missing_chunk(
     )
 
     # Build mock Storage object
-    predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
+    predictions = (
+        '{"instance": {"values": [1, 2, 3, 4], "key": 1},'
+        '"prediction": [[1, 2, 3], [4, 5, 6]]}'
+    )
     with mock_storage_client().bucket("").blob("").open() as mock_fd:
         mock_fd.__iter__.return_value = [predictions]
 
@@ -195,7 +204,10 @@ def test_spatialize_chunk_predictions_invalid_chunk(
     )
 
     # Build mock Storage object
-    predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
+    predictions = (
+        '{"instance": {"values": [1, 2, 3, 4], "key": 1},'
+        '"prediction": [[1, 2, 3], [4, 5, 6]]}'
+    )
     with mock_storage_client().bucket("").blob("").open() as mock_fd:
         mock_fd.__iter__.return_value = [predictions]
 
@@ -305,8 +317,10 @@ def test_spatialize_chunk_predictions_too_many_predictions(
 
     # Build mock Storage object
     predictions = (
-        '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}\n'
-        '{"instance": [2], "prediction": [[1, 2, 3], [4, 5, 6]]}\n'
+        '{"instance": {"values": [1, 2, 3, 4], "key": 1},'
+        '"prediction": [[1, 2, 3], [4, 5, 6]]}\n'
+        '{"instance": {"values": [1, 2, 3, 4], "key": 2},'
+        '"prediction": [[1, 2, 3], [4, 5, 6]]}\n'
     )
     with mock_storage_client().bucket("").blob("").open() as mock_fd:
         mock_fd.__iter__.return_value = predictions.splitlines()
@@ -359,7 +373,10 @@ def test_spatialize_chunk_predictions_missing_expected_neighbor_chunk(
     )
 
     # Build mock Storage object
-    predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
+    predictions = (
+        '{"instance": {"values": [1, 2, 3, 4], "key": 1},'
+        '"prediction": [[1, 2, 3], [4, 5, 6]]}'
+    )
     with mock_storage_client().bucket("").blob("").open() as mock_fd:
         mock_fd.__iter__.return_value = [predictions]
 
@@ -418,7 +435,10 @@ def test_spatialize_chunk_predictions_invalid_neighbor_chunk(
     )
 
     # Build mock Storage object
-    predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
+    predictions = (
+        '{"instance": {"values": [1, 2, 3, 4], "key": 1},'
+        '"prediction": [[1, 2, 3], [4, 5, 6]]}'
+    )
     with mock_storage_client().bucket("").blob("").open() as mock_fd:
         mock_fd.__iter__.return_value = [predictions]
 
@@ -484,7 +504,10 @@ def test_spatialize_chunk_predictions_neighbor_chunk_missing_predictions(
     )
 
     # Build mock Storage object
-    predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
+    predictions = (
+        '{"instance": {"values": [1, 2, 3, 4], "key": 1},'
+        '"prediction": [[1, 2, 3], [4, 5, 6]]}'
+    )
     with mock_storage_client().bucket("").blob("").open() as mock_fd:
         mock_fd.__iter__.return_value = iter(
             predictions.splitlines()
@@ -550,7 +573,10 @@ def test_spatialize_chunk_predictions_h3_centroids_within_chunk(
     )
 
     # Build mock Storage object
-    predictions = '{"instance": [1], "prediction": [[1, 2, 3], [4, 5, 6]]}'
+    predictions = (
+        '{"instance": {"values": [1, 2, 3, 4], "key": 1},'
+        '"prediction": [[1, 2, 3], [4, 5, 6]]}'
+    )
     with mock_storage_client().bucket("").blob("").open() as mock_fd:
         mock_fd.__iter__.side_effect = predictions.splitlines().__iter__
 
@@ -628,9 +654,12 @@ def test_spatialize_chunk_predictions_h3_centroids_outside_chunk(
     )
 
     # Build mock Storage object
-    predictions = '{"instance": [1], "prediction": [[1, 2, 3, 4, 5, 6], \
-    [7, 8, 9, 10, 11, 12], [13, 14, 15, 16, 17, 18], \
-    [19, 20, 21, 22, 23, 24]]}'
+    predictions = (
+        '{"instance":  {"values": [1, 2, 3, 4], "key": 1},'
+        '"prediction": [[1, 2, 3, 4, 5, 6],'
+        "[7, 8, 9, 10, 11, 12], [13, 14, 15, 16, 17, 18],"
+        "[19, 20, 21, 22, 23, 24]]}"
+    )
 
     with mock_storage_client().bucket("").blob("").open() as mock_fd:
         mock_fd.__iter__.side_effect = predictions.splitlines().__iter__
@@ -721,12 +750,14 @@ def test_spatialize_chunk_predictions_overlapping_neighbors(
 
     # Build mock Storage object
     predictions = (
-        '{"instance": [1], "prediction": [[1, 2, 3, 4, 5, 6],'
+        '{"instance":  {"values": [1, 2, 3, 4], "key": 1}, '
+        '"prediction": [[1, 2, 3, 4, 5, 6],'
         "[7, 8, 9, 10, 11, 12], [13, 14, 15, 16, 17, 18], [19, 20, 21, 22, 23, 24],"
         "[25, 26, 27, 28, 29, 30]]}"
     )
     predictions_bottom = (
-        '{"instance": [1], "prediction": [[31, 32, 33, 34, 35, 36],'
+        '{"instance":  {"values": [1, 2, 3, 4], "key": 1},'
+        '"prediction": [[31, 32, 33, 34, 35, 36],'
         "[37, 38, 39, 40, 41, 42], [43, 44, 45, 46, 47, 48], [49, 50, 51, 52, 53, 54],"
         "[55, 56, 57, 58, 59, 60]]}"
     )
