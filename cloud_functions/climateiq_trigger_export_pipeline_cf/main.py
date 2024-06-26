@@ -62,8 +62,10 @@ def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
         with blob.open() as fd:
             for line in fd:
                 chunk_id = json.loads(line)["instance"]["key"]
-                output_filename = f'{id}/{prediction_type}/{model_id}/' \
-                    f'{study_area_name}/{scenario_id}/{chunk_id}'
+                output_filename = (
+                    f"{id}/{prediction_type}/{model_id}/"
+                    f"{study_area_name}/{scenario_id}/{chunk_id}"
+                )
                 output_files.append(output_filename)
                 output_blob = storage_client.bucket(
                     CLIMATEIQ_CHUNK_PREDICTIONS_BUCKET

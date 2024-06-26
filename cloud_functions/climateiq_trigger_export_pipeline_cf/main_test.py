@@ -44,15 +44,15 @@ def test_trigger_export_pipeline_missing_prediction_files(
     input_blobs = [
         storage.Blob(
             name="id1/flood/v1.0/manhattan/extreme/prediction.results-1-of-5",
-            bucket=storage.Bucket(mock_storage_client, "climateiq-predcitions"),
+            bucket=storage.Bucket(mock_storage_client, "climateiq-predictions"),
         ),
         storage.Blob(
             name="id1/flood/v1.0/manhattan/extreme/prediction.results-3-of-5",
-            bucket=storage.Bucket(mock_storage_client, "climateiq-predcitions"),
+            bucket=storage.Bucket(mock_storage_client, "climateiq-predictions"),
         ),
         storage.Blob(
             name="id1/flood/v1.0/manhattan/extreme/prediction.results-5-of-5",
-            bucket=storage.Bucket(mock_storage_client, "climateiq-predcitions"),
+            bucket=storage.Bucket(mock_storage_client, "climateiq-predictions"),
         ),
     ]
     mock_storage_client().list_blobs.return_value = input_blobs
