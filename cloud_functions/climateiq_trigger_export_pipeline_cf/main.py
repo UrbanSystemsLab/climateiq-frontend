@@ -68,9 +68,9 @@ def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
                     f"{study_area_name}/{scenario_id}/{chunk_id}"
                 )
                 output_filenames.append(output_filename)
-                output_blob = storage_client.bucket(
-                    OUTPUT_BUCKET_NAME
-                ).blob(output_filename)
+                output_blob = storage_client.bucket(OUTPUT_BUCKET_NAME).blob(
+                    output_filename
+                )
                 output_blob.upload_from_string(line)
 
     # Once all output files have been written, publish pubsub message per chunk to kick
