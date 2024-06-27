@@ -5,8 +5,8 @@ import json
 from google import cloud
 from cloudevents import http
 
-CLIMATEIQ_PREDICTIONS_BUCKET = "climateiq-predictions"
-CLIMATEIQ_CHUNK_PREDICTIONS_BUCKET = "climateiq-chunk-predictions"
+INPUT_BUCKET_NAME = "climateiq-predictions"
+OUTPUT_BUCKET_NAME = "climateiq-chunk-predictions"
 CLIMATEIQ_PROJECT_ID = "climateiq"
 CLIMATEIQ_EXPORT_PIPELINE_TOPIC_ID = "climateiq-spatialize-and-export-predictions"
 
@@ -48,7 +48,7 @@ def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
     # Retrieve all input prediction files.
     storage_client = cloud.storage.Client()
     input_blobs = storage_client.list_blobs(
-        CLIMATEIQ_PREDICTIONS_BUCKET,
+        INPUT_BUCKET_NAME,
         prefix=f"{id}/{prediction_type}/{model_id}/{study_area_name}/{scenario_id}",
     )
     total_input_blobs = sum(1 for _ in input_blobs)
@@ -69,7 +69,7 @@ def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
                 )
                 output_filenames.append(output_filename)
                 output_blob = storage_client.bucket(
-                    CLIMATEIQ_CHUNK_PREDICTIONS_BUCKET
+                    OUTPUT_BUCKET_NAME
                 ).blob(output_filename)
                 output_blob.upload_from_string(line)
 

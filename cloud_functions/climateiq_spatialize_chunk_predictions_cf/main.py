@@ -12,7 +12,7 @@ from google import cloud
 from shapely import geometry
 from h3 import h3
 
-CLIMATEIQ_CHUNK_PREDICTIONS_BUCKET = "climateiq-chunk-predictions"
+INPUT_BUCKET_NAME = "climateiq-chunk-predictions"
 GLOBAL_CRS = "EPSG:4326"
 # CAUTION: Changing the H3 cell size may require updates to how many/which neighboring
 # chunks we process.
@@ -86,7 +86,7 @@ def _read_chunk_predictions(object_name: str) -> np.ndarray:
         ValueError: If the predictions file format is invalid.
     """
     storage_client = cloud.storage.Client()
-    bucket = storage_client.bucket(CLIMATEIQ_CHUNK_PREDICTIONS_BUCKET)
+    bucket = storage_client.bucket(INPUT_BUCKET_NAME)
     blob = bucket.blob(object_name)
 
     with blob.open() as fd:
