@@ -6,6 +6,18 @@ from cloudevents import http
 from google.cloud import storage, pubsub_v1
 
 
+def _create_pubsub_event() -> http.CloudEvent:
+    attributes = {
+        "type": "google.cloud.storage.object.v1.finalized",
+        "source": "source",
+    }
+    data = {
+        "bucket": "climateiq-predictions",
+        "name": "id1/flood/v1.0/manhattan/extreme/prediction.results-3-of-5",
+    }
+    return http.CloudEvent(attributes, data)
+
+
 def test_trigger_export_pipeline_invalid_object_name():
     attributes = {
         "type": "google.cloud.storage.object.v1.finalized",
@@ -32,15 +44,7 @@ def test_trigger_export_pipeline_invalid_object_name():
 def test_trigger_export_pipeline_missing_prediction_files(
     mock_storage_client, mock_publisher
 ):
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
-    }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "id1/flood/v1.0/manhattan/extreme/prediction.results-3-of-5",
-    }
-    event = http.CloudEvent(attributes, data)
+    event = _create_pubsub_event()
 
     # Missing predictions for chunks 2 and 4.
     input_blobs = [
@@ -67,15 +71,7 @@ def test_trigger_export_pipeline_missing_prediction_files(
 @mock.patch.object(pubsub_v1, "PublisherClient", autospec=True)
 @mock.patch.object(storage, "Client", autospec=True)
 def test_trigger_export_pipeline(mock_storage_client, mock_publisher):
-    attributes = {
-        "type": "google.cloud.storage.object.v1.finalized",
-        "source": "source",
-    }
-    data = {
-        "bucket": "climateiq-predictions",
-        "name": "id1/flood/v1.0/manhattan/extreme/prediction.results-3-of-5",
-    }
-    event = http.CloudEvent(attributes, data)
+    event = _create_pubsub_event()
 
     # Input blobs setup
     def create_mock_input_blob(name, start_chunk_id):

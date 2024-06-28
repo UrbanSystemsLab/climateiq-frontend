@@ -42,6 +42,12 @@ def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
             "<file_number>-of-{number_of_files_generated}'"
         )
     id, prediction_type, model_id, study_area_name, scenario_id, filename = path.parts
+    if filename.count("-") != 3:
+        raise ValueError(
+            "Invalid object name format. Expected format: '<id>/<prediction_type>/"
+            "<model_id>/<study_area_name>/<scenario_id>/prediction.results-"
+            "<file_number>-of-{number_of_files_generated}'"
+        )
     _, _, _, file_count = filename.split("-")
     total_prediction_files = int(file_count)
 
@@ -51,7 +57,7 @@ def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
         INPUT_BUCKET_NAME,
         prefix=f"{id}/{prediction_type}/{model_id}/{study_area_name}/{scenario_id}",
     )
-    total_input_blobs = sum(1 for _ in input_blobs)
+    total_input_blobs = len(input_blobs)
     if total_input_blobs != total_prediction_files:
         # Return early since all expected output prediction files have not been
         # written yet.

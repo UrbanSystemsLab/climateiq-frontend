@@ -8,7 +8,7 @@ import geopandas as gpd
 
 from typing import Any
 from cloudevents import http
-from google import cloud
+from google.cloud import firestore, storage
 from shapely import geometry
 from h3 import h3
 
@@ -85,7 +85,7 @@ def _read_chunk_predictions(object_name: str) -> np.ndarray:
     Raises:
         ValueError: If the predictions file format is invalid.
     """
-    storage_client = cloud.storage.Client()
+    storage_client = storage.Client()
     bucket = storage_client.bucket(INPUT_BUCKET_NAME)
     blob = bucket.blob(object_name)
 
@@ -149,7 +149,7 @@ def _get_study_area_metadata(
         missing required fields.
     """
     # TODO: Consider refactoring this to use library from climateiq-cnn repo.
-    db = cloud.firestore.Client()
+    db = firestore.Client()
 
     study_area_ref = db.collection(STUDY_AREAS_ID).document(study_area_name)
     chunks_ref = study_area_ref.collection(CHUNKS_ID)
