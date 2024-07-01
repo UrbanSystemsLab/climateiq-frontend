@@ -3,7 +3,7 @@
   <PreFlow name="PreFlow">
     <Request>
       <Step>
-        <Name>FC-CORS</Name>
+        <Name>CORS-AddHeaders</Name>
       </Step>
       <Step>
         <Name>SA-RateLimit</Name>
