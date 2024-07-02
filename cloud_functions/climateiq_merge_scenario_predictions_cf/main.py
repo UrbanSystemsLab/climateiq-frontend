@@ -8,31 +8,31 @@ import functions_framework
 
 
 # Bucket name, where spatialized prediction outputs are stored.
-INPUT_BUCKET_NAME = "climateiq-spatialized-predictions"
+INPUT_BUCKET_NAME = "climateiq-spatialized-chunk-predictions"
 # Bucket name, where merged prediction outputs are stored.
-OUTPUT_BUCKET_NAME = "climateiq-merged-predictions"
+OUTPUT_BUCKET_NAME = "climateiq-spatialized-merged-predictions"
 # File name pattern for the CSVs for each scenario and chunk.
 CHUNK_FILE_NAME_PATTERN = (
-    r"(?P<run_id>\w+)/(?P<prediction_type>\w+)/(?P<model_id>\w+)/"
+    r"(?P<batch_id>\w+)/(?P<prediction_type>\w+)/(?P<model_id>\w+)/"
     r"(?P<study_area_name>\w+)/(?P<scenario_id>\w+)/(?P<chunk_id>\w+)\.csv"
 )
 
 
-# This only handles merging flood data. Heat data will be divided into completely
-# different chunks.
 @functions_framework.http
 def merge_scenario_predictions(request: flask.Request) -> tuple[str, int]:
     """Merges predictions for each chunk across scenarios into single files per chunk.
 
+    TODO: Trigger based on file writes instead.
+
     Args:
-        request: A Flask request with the query parameters: run_id,
+        request: A Flask request with the query parameters: batch_id,
             prediction_type, model_id, study_area_name.
     Returns:
         A tuple of the HTTP response (message, status_code).
     """
     try:
-        run_id, prediction_type, model_id, study_area_name = _get_args(
-            request, ("run_id", "prediction_type", "model_id", "study_area_name")
+        batch_id, prediction_type, model_id, study_area_name = _get_args(
+            request, ("batch_id", "prediction_type", "model_id", "study_area_name")
         )
     except ValueError as error:
         return f"Bad request: {error}", 400
@@ -42,21 +42,23 @@ def merge_scenario_predictions(request: flask.Request) -> tuple[str, int]:
     output_bucket = storage_client.bucket(OUTPUT_BUCKET_NAME)
 
     blobs = storage_client.list_blobs(
-        INPUT_BUCKET_NAME, f"{run_id}/{prediction_type}/{model_id}/{study_area_name}"
+        INPUT_BUCKET_NAME, f"{batch_id}/{prediction_type}/{model_id}/{study_area_name}"
     )
     chunk_ids, scenario_ids = _get_chunk_and_scenario_ids(blobs)
     for chunk_id in chunk_ids:
         output_file_name = (
-            f"{run_id}/{study_area_name}/{prediction_type}/{chunk_id}.csv"
+            f"{batch_id}/{prediction_type}/{model_id}/{study_area_name}/{chunk_id}.csv"
         )
         blob_to_write = output_bucket.blob(output_file_name)
         with blob_to_write.open("w") as fd:
+            # Open the blob and start writing a CSV file with the headers
+            # h3_index,scenario_0,scenario_1...
             writer = csv.DictWriter(fd, fieldnames=["h3_index"] + scenario_ids)
             writer.writeheader()
             predictions_by_h3_index: dict[str, dict] = collections.defaultdict(dict)
             for scenario_id in scenario_ids:
                 object_name = (
-                    f"{run_id}/{prediction_type}/{model_id}/"
+                    f"{batch_id}/{prediction_type}/{model_id}/"
                     f"{study_area_name}/{scenario_id}/{chunk_id}.csv"
                 )
                 try:
@@ -68,8 +70,17 @@ def merge_scenario_predictions(request: flask.Request) -> tuple[str, int]:
                         "prediction"
                     ]
             for h3_index, predictions in predictions_by_h3_index.items():
+                missing_scenario_ids = set(scenario_ids) - set(predictions.keys())
+                if missing_scenario_ids:
+                    return (
+                        (
+                            f"Not found: Missing predictions for {h3_index} for "
+                            f"{', '.join(missing_scenario_ids)}."
+                        ),
+                        404,
+                    )
                 predictions["h3_index"] = h3_index
-                # Output CSV will have the headers: h3_index, scenario_0, scenario_1...
+                # Output CSV will have the headers: h3_index,scenario_0,scenario_1...
                 writer.writerow(predictions)
     return "Success", 200
 
@@ -125,7 +136,7 @@ def _get_chunk_and_scenario_ids(
 def _get_file_content(bucket: storage.Bucket, object_name: str) -> list[dict]:
     """Gets the content from a Blob.
 
-    Assumes Blob content is in CSV format with a header.
+    Assumes Blob content is in CSV format with headers h3_index,prediction...
 
     Args:
         bucket: The GCS bucket the Blob is in.
