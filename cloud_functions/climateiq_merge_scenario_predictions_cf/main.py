@@ -1,6 +1,7 @@
 import collections
 import csv
 import re
+import os
 
 import flask
 from google.cloud import storage
@@ -8,9 +9,13 @@ import functions_framework
 
 
 # Bucket name, where spatialized prediction outputs are stored.
-INPUT_BUCKET_NAME = "climateiq-spatialized-chunk-predictions"
+INPUT_BUCKET_NAME = (
+    os.environ.get("BUCKET_PREFIX", "") + "climateiq-spatialized-chunk-predictions"
+)
 # Bucket name, where merged prediction outputs are stored.
-OUTPUT_BUCKET_NAME = "climateiq-spatialized-merged-predictions"
+OUTPUT_BUCKET_NAME = (
+    os.environ.get("BUCKET_PREFIX", "") + "climateiq-spatialized-merged-predictions"
+)
 # File name pattern for the CSVs for each scenario and chunk.
 CHUNK_FILE_NAME_PATTERN = (
     r"(?P<batch_id>\w+)/(?P<prediction_type>\w+)/(?P<model_id>\w+)/"
