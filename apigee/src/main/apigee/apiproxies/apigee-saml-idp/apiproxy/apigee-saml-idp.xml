@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<APIProxy revision="5" name="apigee-saml-idp">
+  <DisplayName>Apigee SAML IDP</DisplayName>
+  <Description>A proxy acting as a SAML facade on Firebase Authn</Description>
+  <CreatedAt>1720473884288</CreatedAt>
+  <LastModifiedAt>1720712868194</LastModifiedAt>
+  <BasePaths>/apigee-saml-idp</BasePaths>
+  <Policies>
+    <Policy>RF-XML-Bad-Request</Policy>
+    <Policy>AM-Clean-Request-Headers-From-Response</Policy>
+    <Policy>AM-Settings</Policy>
+    <Policy>AM-Decode-SAML-AuthnRequest</Policy>
+    <Policy>VerifyJWT-Firebase-Id-Token</Policy>
+    <Policy>JS-Shred-Session</Policy>
+    <Policy>AM-Encode-SAML-Response</Policy>
+    <Policy>AM-Initialize-SAML-Assertion</Policy>
+    <Policy>CP-Session</Policy>
+    <Policy>RF-HTML-Unknown-Request</Policy>
+    <Policy>EV-Extract-SAML-Request-Params</Policy>
+    <Policy>RF-XML-Unknown-Request</Policy>
+    <Policy>AM-Redirect-to-Signin</Policy>
+    <Policy>JS-Check-Issue-Instant</Policy>
+    <Policy>SAML-Generate-Signed-Response</Policy>
+    <Policy>AM-Inject-Proxy-Revision-Header</Policy>
+    <Policy>CL-Session</Policy>
+    <Policy>EV-Extract-Values-from-AuthnRequest</Policy>
+    <Policy>Java-XMLDSIG-Validate</Policy>
+    <Policy>JS-Produce-Session-Payload</Policy>
+    <Policy>FC-CORS</Policy>
+  </Policies>
+  <ProxyEndpoints>
+    <ProxyEndpoint>idp</ProxyEndpoint>
+  </ProxyEndpoints>
+  <Resources>
+    <Resource>properties://settings.properties</Resource>
+    <Resource>java://apigee-xmldsig-20240319.jar</Resource>
+  </Resources>
+</APIProxy>
