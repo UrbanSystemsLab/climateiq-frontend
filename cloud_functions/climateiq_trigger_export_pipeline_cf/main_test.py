@@ -1,7 +1,7 @@
 import main
 import io
-from contextlib import redirect_stdout
 
+from contextlib import redirect_stdout
 from unittest import mock
 from cloudevents import http
 from google.cloud import storage, pubsub_v1
