@@ -68,7 +68,10 @@ def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
     input_blobs = list(
         storage_client.list_blobs(
             INPUT_BUCKET_NAME,
-            prefix=f"{id}/{prediction_type}/{model_id}/{study_area_name}/{scenario_id}/prediction.results",
+            prefix=(
+                f"{id}/{prediction_type}/{model_id}/{study_area_name}/"
+                f"{scenario_id}/prediction.results"
+            ),
         )
     )
     total_input_blobs = len(input_blobs)
