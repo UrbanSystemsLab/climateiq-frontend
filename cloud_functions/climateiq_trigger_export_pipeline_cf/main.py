@@ -33,8 +33,8 @@ def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
     # Extract components from the object name and determine the total number of
     # output prediction files.
     #
-    # Note: Invalid object name is a non-retriable error so we return an error
-    # instead of throwing an exception (which would trigger retries).
+    # Note: Invalid object name is a non-retriable error so we return instead
+    # of throwing an exception (which would trigger retries).
     expected_format = (
         "<id>/<prediction_type>/<model_id>/<study_area_name>/"
         "<scenario_id>/prediction.results-<file_number>-of-{number_of_files_generated}"
