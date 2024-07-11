@@ -13,7 +13,7 @@ import main
 
 
 def _create_tmpfile(contents: str, dir: str) -> str:
-    with tempfile.NamedTemporaryFile("w+", dir=dir, delete=False) as fd:
+    with tempfile.NamedTemporaryFile("w", dir=dir, delete=False) as fd:
         fd.write(contents)
     return fd.name
 
