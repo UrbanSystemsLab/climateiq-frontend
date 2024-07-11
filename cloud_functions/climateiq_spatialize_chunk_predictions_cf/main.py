@@ -491,7 +491,6 @@ def _aggregate_h3_predictions(
 
         chunk_doc = chunk_docs[0]
         neighbor_chunk_id = chunk_doc.id
-        print(neighbor_chunk_id)
         neighbor_chunk_metadata = chunk_doc.to_dict()
         if not _chunk_metadata_fields_valid(neighbor_chunk_metadata):
             raise ValueError(
