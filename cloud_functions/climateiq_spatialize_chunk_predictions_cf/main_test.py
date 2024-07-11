@@ -469,7 +469,9 @@ def test_spatialize_chunk_predictions_missing_expected_neighbor_chunk(
     mock_chunks_ref = mock_study_area_ref.collection("chunks")
     mock_chunks_ref.get.return_value = chunks_metadata
     mock_chunks_ref.document("chunk-id").get().to_dict.return_value = chunks_metadata[0]
-    mock_chunks_ref.where().where().limit().get.return_value = [] # Neighbor chunks do not exist.
+    mock_chunks_ref.where().where().limit().get.return_value = (
+        []
+    )  # Neighbor chunks do not exist.
 
     output = io.StringIO()
     with redirect_stdout(output):
@@ -534,9 +536,9 @@ def test_spatialize_chunk_predictions_invalid_neighbor_chunk(
     mock_chunks_ref.document("chunk-id").get().to_dict.return_value = chunks_metadata[0]
 
     neighbor_metadata_mock = mock.MagicMock()
-    neighbor_metadata_mock.id = 'neighbor-chunk-id'
+    neighbor_metadata_mock.id = "neighbor-chunk-id"
     neighbor_metadata = chunks_metadata[0].copy()
-    neighbor_metadata.pop("row_count") # Missing "row_count" required field
+    neighbor_metadata.pop("row_count")  # Missing "row_count" required field
     neighbor_metadata_mock.to_dict.return_value = neighbor_metadata
     mock_chunks_ref.where().where().limit().get.return_value = [neighbor_metadata_mock]
 
@@ -608,7 +610,7 @@ def test_spatialize_chunk_predictions_neighbor_chunk_missing_predictions(
     mock_chunks_ref.document("chunk-id").get().to_dict.return_value = chunks_metadata[0]
 
     neighbor_metadata_mock = mock.MagicMock()
-    neighbor_metadata_mock.id = 'neighbor-chunk-id'
+    neighbor_metadata_mock.id = "neighbor-chunk-id"
     neighbor_metadata = chunks_metadata[0].copy()
     neighbor_metadata_mock.to_dict.return_value = neighbor_metadata
     mock_chunks_ref.where().where().limit().get.return_value = [neighbor_metadata_mock]
@@ -700,7 +702,7 @@ def test_spatialize_chunk_predictions_h3_centroids_within_chunk(
     mock_chunks_ref.document("chunk-id").get().to_dict.return_value = chunks_metadata[0]
 
     neighbor_metadata_mock = mock.MagicMock()
-    neighbor_metadata_mock.id = 'neighbor-chunk-id'
+    neighbor_metadata_mock.id = "neighbor-chunk-id"
     neighbor_metadata = chunks_metadata[0].copy()
     neighbor_metadata_mock.to_dict.return_value = neighbor_metadata
     mock_chunks_ref.where().where().limit().get.return_value = [neighbor_metadata_mock]
@@ -808,11 +810,10 @@ def test_spatialize_chunk_predictions_h3_centroids_outside_chunk(
     mock_chunks_ref.document("chunk-id").get().to_dict.return_value = chunks_metadata[0]
 
     neighbor_metadata_mock = mock.MagicMock()
-    neighbor_metadata_mock.id = 'neighbor-chunk-id'
+    neighbor_metadata_mock.id = "neighbor-chunk-id"
     neighbor_metadata = chunks_metadata[0].copy()
     neighbor_metadata_mock.to_dict.return_value = neighbor_metadata
     mock_chunks_ref.where().where().limit().get.return_value = [neighbor_metadata_mock]
-
 
     # Build expected output data (neighbor chunks have same data as current chunk in
     # this test so prediction values stay the same after aggregation.)
@@ -1011,32 +1012,43 @@ def test_spatialize_chunk_predictions_overlapping_neighbors(
         "x_index": 1,
         "y_index": 0,
     }
-    type(
-        mock_firestore_client()
-        .collection()
-        .document()
-        .collection()
-        .where()
-        .where()
-        .limit()
-        .get()
-    ).id = mock.PropertyMock(
-        side_effect=[
-            "neighbor-chunk-left",
-            "neighbor-chunk-right",
-            "neighbor-chunk-bottom-left",
-            "neighbor-chunk-bottom-right",
-            "neighbor-chunk-bottom",
-        ]
-    )
     (
         mock_firestore_client().collection().document().collection().where().where()
-    ).limit().get().to_dict.side_effect = [
-        neighbor_left,
-        neighbor_right,
-        neighbor_bottom_left,
-        neighbor_bottom_right,
-        neighbor_bottom,
+    ).limit().get.side_effect = [
+        [
+            mock.MagicMock(
+                **{"id": "neighbor-chunk-left", "to_dict.return_value": neighbor_left}
+            )
+        ],
+        [
+            mock.MagicMock(
+                **{"id": "neighbor-chunk-right", "to_dict.return_value": neighbor_right}
+            )
+        ],
+        [
+            mock.MagicMock(
+                **{
+                    "id": "neighbor-chunk-bottom-left",
+                    "to_dict.return_value": neighbor_bottom_left,
+                }
+            )
+        ],
+        [
+            mock.MagicMock(
+                **{
+                    "id": "neighbor-chunk-bottom-right",
+                    "to_dict.return_value": neighbor_bottom_right,
+                }
+            )
+        ],
+        [
+            mock.MagicMock(
+                **{
+                    "id": "neighbor-chunk-bottom",
+                    "to_dict.return_value": neighbor_bottom,
+                }
+            )
+        ],
     ]
 
     # Build expected output data
