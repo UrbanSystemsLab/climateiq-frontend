@@ -29,8 +29,10 @@ CHUNKS_ID = "chunks"
 # Pub/Sub topic.
 @functions_framework.cloud_event
 def spatialize_chunk_predictions(cloud_event: http.CloudEvent) -> None:
-    """This function spatializes model predictions for a single chunk and outputs a
-    CSV file to GCS containing H3 indexes along with associated predictions.
+    """This function spatializes model predictions for a single chunk.
+
+    Spatialized model predictions are outputtted to a CSV file in GCS,
+    containing H3 indexes along with associated predictions.
 
     Args:
         cloud_event: The CloudEvent representing the Pub/Sub message.
@@ -83,8 +85,7 @@ def spatialize_chunk_predictions(cloud_event: http.CloudEvent) -> None:
 # TODO: Modify this logic once CNN output schema is confirmed. Also update to
 # account for errors and special values.
 def _read_chunk_predictions(object_name: str) -> np.ndarray:
-    """Reads model predictions for a given chunk from GCS and outputs
-    these predictions in a 2D array.
+    """Reads model predictions for a given chunk from GCS.
 
     Args:
         object_name: The name of the chunk object to read.
@@ -117,8 +118,7 @@ def _read_chunk_predictions(object_name: str) -> np.ndarray:
 def _read_neighbor_chunk_predictions(
     object_name: str, neighbor_chunk_id: str
 ) -> np.ndarray:
-    """Reads model predictions for a neighbor chunk from GCS and outputs
-    these predictions in a 2D array.
+    """Reads model predictions for a neighbor chunk from GCS.
 
     Args:
         object_name: The name of the chunk object this cloud function is currently
@@ -239,8 +239,7 @@ def _get_chunk_metadata(chunks_ref: Any, chunk_id: str) -> dict:
 def _build_spatialized_model_predictions(
     study_area_metadata: dict, chunk_metadata: dict, predictions: np.ndarray
 ) -> pd.DataFrame:
-    """Builds a DataFrame containing the lat/lon coordinates of each cell's
-    center point.
+    """Builds a DF containing the lat/lon coordinates of each cell's center point.
 
     Args:
         study_area_metadata: A dictionary containing metadata for the study
