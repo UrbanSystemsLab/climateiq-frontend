@@ -9,9 +9,7 @@ import geopandas as gpd
 
 from typing import Any
 from cloudevents import http
-from google.cloud.firestore import firestore as firestore
-from google.cloud.storage import storage as storage
-from google.cloud.firestore import firestore_v1 as firestore_v1
+from google.cloud import firestore, storage, firestore_v1
 from shapely import geometry
 from h3 import h3
 

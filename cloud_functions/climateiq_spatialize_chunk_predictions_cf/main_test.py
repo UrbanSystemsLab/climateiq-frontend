@@ -4,7 +4,8 @@ import io
 
 from contextlib import redirect_stdout
 from cloudevents import http
-from google.cloud import storage, firestore
+from google.cloud import storage
+from google.cloud import firestore
 import pandas as pd
 from typing import Any, Dict, List
 from unittest import mock
