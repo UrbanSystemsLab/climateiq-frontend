@@ -60,8 +60,8 @@ def test_spatialize_chunk_predictions_invalid_object_name() -> None:
 
     assert (
         "Invalid object name format. Expected format: '<id>/<prediction_type>/"
-        "<model_id>/<study_area_name>/<scenario_id>/<chunk_id>'\nActual name: 'invalid_name'"
-        in output.getvalue()
+        "<model_id>/<study_area_name>/<scenario_id>/<chunk_id>'"
+        "\nActual name: 'invalid_name'" in output.getvalue()
     )
 
 

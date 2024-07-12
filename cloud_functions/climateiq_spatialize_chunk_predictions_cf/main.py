@@ -65,7 +65,8 @@ def spatialize_chunk_predictions(cloud_event: http.CloudEvent) -> None:
             chunks_ref,
         )
     except ValueError as ve:
-        # Any raised ValueErrors are non-retriable so return instead of throwing an exception (which would trigger retries)
+        # Any raised ValueErrors are non-retriable so return instead of throwing an
+        # exception (which would trigger retries)
         print(ve)
         return
 
