@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<APIProxy revision="5" name="apigee-saml-idp">
+<APIProxy revision="6" name="apigee-saml-idp">
   <DisplayName>Apigee SAML IDP</DisplayName>
-  <Description>A proxy acting as a SAML facade on Firebase Authn</Description>
-  <CreatedAt>1720473884288</CreatedAt>
-  <LastModifiedAt>1720712868194</LastModifiedAt>
+  <Description>A proxy acting as a SAML IdP using Google Cloud Identity platform (through Firebase Authn) as a backend. Based on https://github.com/DinoChiesa/Apigee-SAML-IDP-for-Firebase/</Description>
+  <CreatedAt>1721068014538</CreatedAt>
+  <LastModifiedAt>1721069167061</LastModifiedAt>
   <BasePaths>/apigee-saml-idp</BasePaths>
   <Policies>
     <Policy>RF-XML-Bad-Request</Policy>
@@ -15,7 +15,6 @@
     <Policy>AM-Encode-SAML-Response</Policy>
     <Policy>AM-Initialize-SAML-Assertion</Policy>
     <Policy>CP-Session</Policy>
-    <Policy>RF-HTML-Unknown-Request</Policy>
     <Policy>EV-Extract-SAML-Request-Params</Policy>
     <Policy>RF-XML-Unknown-Request</Policy>
     <Policy>AM-Redirect-to-Signin</Policy>

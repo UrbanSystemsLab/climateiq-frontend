@@ -7,7 +7,7 @@
   var dNow = new Date();
   var deltaInSeconds = (dNow.valueOf() - dIssue.valueOf())/1000;
   if (deltaInSeconds > 45) {
-    throw new Error("stale authentication request");
+    throw new Error("Stale authentication request");
   }
   ]]>
   </Source>

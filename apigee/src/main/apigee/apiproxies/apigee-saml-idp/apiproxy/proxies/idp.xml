@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ProxyEndpoint name="idp">
-  <Description>a SAML Identity Provider, supporting SP-initiated signon. Intended for use with the Apigee Integrated Developer portal.</Description>
+  <Description>A SAML Identity Provider, supporting service provider-initiated signon. Intended for use with the Apigee Integrated Developer portal.</Description>
   <HTTPProxyConnection>
     <BasePath>/apigee-saml-idp</BasePath>
   </HTTPProxyConnection>

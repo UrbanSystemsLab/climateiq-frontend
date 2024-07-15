@@ -4,7 +4,7 @@
   <FaultResponse>
     <Set>
       <Payload contentType="application/xml">
-        <error>unknown request</error>
+        <error>Unknown Request</error>
       </Payload>
       <StatusCode>404</StatusCode>
     </Set>
