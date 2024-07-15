@@ -4,8 +4,8 @@ import io
 
 from contextlib import redirect_stdout
 from cloudevents import http
+from google.cloud import firestore_v1
 from google.cloud import storage
-from google.cloud import firestore
 import pandas as pd
 from typing import Any, Dict, List
 from unittest import mock
@@ -66,8 +66,8 @@ def test_spatialize_chunk_predictions_invalid_object_name() -> None:
     )
 
 
-@mock.patch.object(storage, "Client", autospec=True)
-@mock.patch.object(firestore, "Client", autospec=True)
+@mock.patch.object(storage.client, "Client", autospec=True)
+@mock.patch.object(firestore_v1, "Client", autospec=True)
 def test_spatialize_chunk_predictions_missing_study_area(
     mock_firestore_client, mock_storage_client
 ) -> None:
@@ -106,8 +106,8 @@ def test_spatialize_chunk_predictions_missing_study_area(
     assert 'Study area "study-area-name" does not exist' in output.getvalue()
 
 
-@mock.patch.object(storage, "Client", autospec=True)
-@mock.patch.object(firestore, "Client", autospec=True)
+@mock.patch.object(storage.client, "Client", autospec=True)
+@mock.patch.object(firestore_v1, "Client", autospec=True)
 def test_spatialize_chunk_predictions_invalid_study_area(
     mock_firestore_client, mock_storage_client
 ) -> None:
@@ -168,8 +168,8 @@ def test_spatialize_chunk_predictions_invalid_study_area(
     )
 
 
-@mock.patch.object(storage, "Client", autospec=True)
-@mock.patch.object(firestore, "Client", autospec=True)
+@mock.patch.object(storage.client, "Client", autospec=True)
+@mock.patch.object(firestore_v1, "Client", autospec=True)
 def test_spatialize_chunk_predictions_missing_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
@@ -229,8 +229,8 @@ def test_spatialize_chunk_predictions_missing_chunk(
     assert 'Chunk "chunk-id" does not exist' in output.getvalue()
 
 
-@mock.patch.object(storage, "Client", autospec=True)
-@mock.patch.object(firestore, "Client", autospec=True)
+@mock.patch.object(storage.client, "Client", autospec=True)
+@mock.patch.object(firestore_v1, "Client", autospec=True)
 def test_spatialize_chunk_predictions_invalid_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
@@ -292,8 +292,8 @@ def test_spatialize_chunk_predictions_invalid_chunk(
     )
 
 
-@mock.patch.object(storage, "Client", autospec=True)
-@mock.patch.object(firestore, "Client", autospec=True)
+@mock.patch.object(storage.client, "Client", autospec=True)
+@mock.patch.object(firestore_v1, "Client", autospec=True)
 def test_spatialize_chunk_predictions_missing_predictions(
     mock_firestore_client, mock_storage_client
 ) -> None:
@@ -353,8 +353,8 @@ def test_spatialize_chunk_predictions_missing_predictions(
     )
 
 
-@mock.patch.object(storage, "Client", autospec=True)
-@mock.patch.object(firestore, "Client", autospec=True)
+@mock.patch.object(storage.client, "Client", autospec=True)
+@mock.patch.object(firestore_v1, "Client", autospec=True)
 def test_spatialize_chunk_predictions_too_many_predictions(
     mock_firestore_client, mock_storage_client
 ) -> None:
@@ -417,8 +417,8 @@ def test_spatialize_chunk_predictions_too_many_predictions(
     assert "Predictions file has too many predictions" in output.getvalue()
 
 
-@mock.patch.object(storage, "Client", autospec=True)
-@mock.patch.object(firestore, "Client", autospec=True)
+@mock.patch.object(storage.client, "Client", autospec=True)
+@mock.patch.object(firestore_v1, "Client", autospec=True)
 def test_spatialize_chunk_predictions_missing_expected_neighbor_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
@@ -482,8 +482,8 @@ def test_spatialize_chunk_predictions_missing_expected_neighbor_chunk(
     )
 
 
-@mock.patch.object(storage, "Client", autospec=True)
-@mock.patch.object(firestore, "Client", autospec=True)
+@mock.patch.object(storage.client, "Client", autospec=True)
+@mock.patch.object(firestore_v1, "Client", autospec=True)
 def test_spatialize_chunk_predictions_invalid_neighbor_chunk(
     mock_firestore_client, mock_storage_client
 ) -> None:
@@ -554,8 +554,8 @@ def test_spatialize_chunk_predictions_invalid_neighbor_chunk(
     )
 
 
-@mock.patch.object(storage, "Client", autospec=True)
-@mock.patch.object(firestore, "Client", autospec=True)
+@mock.patch.object(storage.client, "Client", autospec=True)
+@mock.patch.object(firestore_v1, "Client", autospec=True)
 def test_spatialize_chunk_predictions_neighbor_chunk_missing_predictions(
     mock_firestore_client, mock_storage_client
 ) -> None:
@@ -626,8 +626,8 @@ def test_spatialize_chunk_predictions_neighbor_chunk_missing_predictions(
     ) in output.getvalue()
 
 
-@mock.patch.object(storage, "Client", autospec=True)
-@mock.patch.object(firestore, "Client", autospec=True)
+@mock.patch.object(storage.client, "Client", autospec=True)
+@mock.patch.object(firestore_v1, "Client", autospec=True)
 def test_spatialize_chunk_predictions_h3_centroids_within_chunk(
     mock_firestore_client, mock_storage_client, tmp_path
 ) -> None:
@@ -732,8 +732,8 @@ def test_spatialize_chunk_predictions_h3_centroids_within_chunk(
     )
 
 
-@mock.patch.object(storage, "Client", autospec=True)
-@mock.patch.object(firestore, "Client", autospec=True)
+@mock.patch.object(storage.client, "Client", autospec=True)
+@mock.patch.object(firestore_v1, "Client", autospec=True)
 def test_spatialize_chunk_predictions_h3_centroids_outside_chunk(
     mock_firestore_client, mock_storage_client, tmp_path
 ) -> None:
@@ -851,8 +851,8 @@ def test_spatialize_chunk_predictions_h3_centroids_outside_chunk(
     )
 
 
-@mock.patch.object(storage, "Client", autospec=True)
-@mock.patch.object(firestore, "Client", autospec=True)
+@mock.patch.object(storage.client, "Client", autospec=True)
+@mock.patch.object(firestore_v1, "Client", autospec=True)
 def test_spatialize_chunk_predictions_overlapping_neighbors(
     mock_firestore_client, mock_storage_client, tmp_path
 ) -> None:

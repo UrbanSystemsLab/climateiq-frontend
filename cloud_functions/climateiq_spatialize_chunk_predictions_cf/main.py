@@ -9,7 +9,8 @@ import geopandas as gpd
 
 from typing import Any
 from cloudevents import http
-from google.cloud import firestore, storage, firestore_v1
+from google.cloud import firestore_v1
+from google.cloud.storage import client as gcs_client
 from shapely import geometry
 from h3 import h3
 
@@ -72,7 +73,7 @@ def spatialize_chunk_predictions(cloud_event: http.CloudEvent) -> None:
         print(ve)
         return
 
-    storage_client = storage.Client()
+    storage_client = gcs_client.Client()
     bucket = storage_client.bucket(OUTPUT_BUCKET_NAME)
     blob = bucket.blob(
         f"{id}/{prediction_type}/{model_id}/{study_area_name}/{scenario_id}/{chunk_id}"
@@ -96,7 +97,7 @@ def _read_chunk_predictions(object_name: str) -> np.ndarray:
     Raises:
         ValueError: If the predictions file format is invalid.
     """
-    storage_client = storage.Client()
+    storage_client = gcs_client.Client()
     bucket = storage_client.bucket(INPUT_BUCKET_NAME)
     blob = bucket.blob(object_name)
 
@@ -160,7 +161,7 @@ def _get_study_area_metadata(
         missing required fields.
     """
     # TODO: Consider refactoring this to use library from climateiq-cnn repo.
-    db = firestore.Client()
+    db = firestore_v1.Client()
 
     study_area_ref = db.collection(STUDY_AREAS_ID).document(study_area_name)
     chunks_ref = study_area_ref.collection(CHUNKS_ID)
@@ -174,7 +175,8 @@ def _get_study_area_metadata(
 
     study_area_metadata = study_area_doc.to_dict()
     if (
-        "cell_size" not in study_area_metadata
+        not study_area_metadata
+        or "cell_size" not in study_area_metadata
         or "crs" not in study_area_metadata
         or "row_count" not in study_area_metadata
         or "col_count" not in study_area_metadata
