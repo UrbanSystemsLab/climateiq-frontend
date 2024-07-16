@@ -132,7 +132,7 @@ def merge_scenario_predictions(cloud_event: http.CloudEvent):
                     print(f"Not found: {error}")
                     return
                 for row in rows:
-                    predictions_by_cell_code[row["cell_code"]][scenario_id] = row[
+                    predictions_by_cell_code[row["h3_index"]][scenario_id] = row[
                         "prediction"
                     ]
             for cell_code, predictions in predictions_by_cell_code.items():
