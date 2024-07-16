@@ -54,7 +54,7 @@ def _create_firestore_entries(
 def _create_chunk_file(
     h3_indices_to_predictions: dict[str, float], tmp_path: str
 ) -> str:
-    rows = ["cell_code,prediction"] + [
+    rows = ["h3_index,prediction"] + [
         f"{cell_code},{prediction}"
         for cell_code, prediction in h3_indices_to_predictions.items()
     ]
