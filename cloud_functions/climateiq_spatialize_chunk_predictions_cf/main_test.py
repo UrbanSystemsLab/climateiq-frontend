@@ -7,7 +7,6 @@ import pandas as pd
 from cloudevents import http
 from google.cloud import firestore_v1
 from google.cloud import storage
-
 from typing import Any, Dict, List
 from unittest import mock
 
