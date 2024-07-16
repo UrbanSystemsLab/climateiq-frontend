@@ -1,12 +1,13 @@
 import base64
 import tempfile
 import io
+import contextlib
+import pandas as pd
 
-from contextlib import redirect_stdout
 from cloudevents import http
 from google.cloud import firestore_v1
 from google.cloud import storage
-import pandas as pd
+
 from typing import Any, Dict, List
 from unittest import mock
 
@@ -56,7 +57,7 @@ def test_spatialize_chunk_predictions_invalid_object_name() -> None:
     )
 
     output = io.StringIO()
-    with redirect_stdout(output):
+    with contextlib.redirect_stdout(output):
         main.spatialize_chunk_predictions(event)
 
     assert (
@@ -100,7 +101,7 @@ def test_spatialize_chunk_predictions_missing_study_area(
     mock_study_area_ref.get().exists = False  # Indicate study area doesn't exist
 
     output = io.StringIO()
-    with redirect_stdout(output):
+    with contextlib.redirect_stdout(output):
         main.spatialize_chunk_predictions(event)
 
     assert 'Study area "study-area-name" does not exist' in output.getvalue()
@@ -159,7 +160,7 @@ def test_spatialize_chunk_predictions_invalid_study_area(
     mock_chunks_ref.get.return_value = chunks_metadata
 
     output = io.StringIO()
-    with redirect_stdout(output):
+    with contextlib.redirect_stdout(output):
         main.spatialize_chunk_predictions(event)
 
     assert (
@@ -223,7 +224,7 @@ def test_spatialize_chunk_predictions_missing_chunk(
     mock_chunks_ref.document("chunk-id").get().exists = False
 
     output = io.StringIO()
-    with redirect_stdout(output):
+    with contextlib.redirect_stdout(output):
         main.spatialize_chunk_predictions(event)
 
     assert 'Chunk "chunk-id" does not exist' in output.getvalue()
@@ -283,7 +284,7 @@ def test_spatialize_chunk_predictions_invalid_chunk(
     mock_chunks_ref.document("chunk-id").get().to_dict.return_value = chunks_metadata[0]
 
     output = io.StringIO()
-    with redirect_stdout(output):
+    with contextlib.redirect_stdout(output):
         main.spatialize_chunk_predictions(event)
 
     assert (
@@ -344,7 +345,7 @@ def test_spatialize_chunk_predictions_missing_predictions(
     mock_chunks_ref.document("chunk-id").get().to_dict.return_value = chunks_metadata[0]
 
     output = io.StringIO()
-    with redirect_stdout(output):
+    with contextlib.redirect_stdout(output):
         main.spatialize_chunk_predictions(event)
 
     assert (
@@ -411,7 +412,7 @@ def test_spatialize_chunk_predictions_too_many_predictions(
     mock_chunk_ref.get().to_dict.return_value = chunks_metadata[0]
 
     output = io.StringIO()
-    with redirect_stdout(output):
+    with contextlib.redirect_stdout(output):
         main.spatialize_chunk_predictions(event)
 
     assert "Predictions file has too many predictions" in output.getvalue()
@@ -475,7 +476,7 @@ def test_spatialize_chunk_predictions_missing_expected_neighbor_chunk(
     )  # Neighbor chunks do not exist.
 
     output = io.StringIO()
-    with redirect_stdout(output):
+    with contextlib.redirect_stdout(output):
         main.spatialize_chunk_predictions(event)
     assert "Neighbor chunk at index (0, 1) is missing from the study area" in str(
         output.getvalue()
@@ -544,7 +545,7 @@ def test_spatialize_chunk_predictions_invalid_neighbor_chunk(
     mock_chunks_ref.where().where().limit().get.return_value = [neighbor_metadata_mock]
 
     output = io.StringIO()
-    with redirect_stdout(output):
+    with contextlib.redirect_stdout(output):
         main.spatialize_chunk_predictions(event)
 
     assert (
@@ -617,7 +618,7 @@ def test_spatialize_chunk_predictions_neighbor_chunk_missing_predictions(
     mock_chunks_ref.where().where().limit().get.return_value = [neighbor_metadata_mock]
 
     output = io.StringIO()
-    with redirect_stdout(output):
+    with contextlib.redirect_stdout(output):
         main.spatialize_chunk_predictions(event)
 
     assert (
