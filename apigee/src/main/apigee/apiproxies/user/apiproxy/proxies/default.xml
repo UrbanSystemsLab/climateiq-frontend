@@ -3,7 +3,7 @@
   <PreFlow name="PreFlow">
     <Request>
       <Step>
-        <Name>FC-CORS</Name>
+        <Name>CORS-AddHeaders</Name>
       </Step>
       <Step>
         <Name>SA-RateLimit</Name>
@@ -18,6 +18,9 @@
       <Step>
         <Name>AM-UserIdHeader</Name>
         <Condition>accesstoken.climateiq_user_id != null</Condition>
+      </Step>
+      <Step>
+        <Name>FC-Add-Secret-to-Header</Name>
       </Step>
     </Request>
   </PostFlow>
