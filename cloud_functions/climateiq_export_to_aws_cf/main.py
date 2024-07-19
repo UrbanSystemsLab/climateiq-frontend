@@ -4,7 +4,8 @@ import os
 import boto3
 import flask
 import functions_framework
-from google.cloud import firestore, storage
+from google.cloud import secretmanager
+from google.cloud.storage import client as gcs_client
 
 # GCS bucket name, where merged prediction outputs are stored.
 GCS_BUCKET_NAME = (
@@ -13,11 +14,10 @@ GCS_BUCKET_NAME = (
 # AWS bucket name, where to copy files to.
 S3_BUCKET_NAME = "climateiq-data-delivery"
 
-# IDs for Firestore.
-SECRET_KEYS_COLLECTION_ID = "secret_keys"
-AWS_KEYS_DOC_ID = "aws_keys"
-AWS_ACCESS_KEY_ID_KEY = "aws_access_key_id"
-AWS_SECRET_ACCESS_KEY_KEY = "aws_secret_access_key"
+# IDs for retrieving secrets to authenticate to AWS
+PROJECT_ID = "climateiq"
+AWS_ACCESS_KEY_ID = "climasens-aws-access-key-id"
+AWS_SECRET_ACCESS_KEY = "climasens-aws-secret-access-key"
 
 
 @functions_framework.http
@@ -27,13 +27,18 @@ def export_to_aws(request: flask.Request) -> tuple[str, int]:
     except ValueError as e:
         return (str(e), 400)
 
-    storage_client = storage.Client()
+    storage_client = gcs_client.Client()
     blobs_to_export = storage_client.list_blobs(GCS_BUCKET_NAME, prefix=prefix)
+
+    if not len(blobs_to_export):
+        return (f"No blobs found with prefix {prefix}", 200)
 
     output_file_dir = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
+    secrets_client = secretmanager.SecretManagerServiceClient()
     try:
-        aws_access_key_id, aws_secret_access_key = _get_aws_access_keys()
+        aws_access_key_id = _get_secret_data(secrets_client, AWS_ACCESS_KEY_ID)
+        aws_secret_access_key = _get_secret_data(secrets_client, AWS_SECRET_ACCESS_KEY)
     except ValueError as e:
         return (str(e), 500)
 
@@ -57,16 +62,17 @@ def _get_prefix_id(request: flask.Request) -> str:
     return prefix
 
 
-def _get_aws_access_keys() -> tuple[str, str]:
-    db = firestore.Client()
-    aws_keys_doc = (
-        db.Collection(SECRET_KEYS_COLLECTION_ID).document(AWS_KEYS_DOC_ID).get()
+def _get_secret_data(
+    client: secretmanager.SecretManagerServiceClient, secret_id: str
+) -> str:
+    versions = client.list_secret_versions(
+        parent=client.secret_path(PROJECT_ID, secret_id)
     )
-
-    if not aws_keys_doc.exists:
-        raise ValueError("AWS keys not found in Firestore.")
-
-    return (
-        aws_keys_doc.get(AWS_ACCESS_KEY_ID_KEY),
-        aws_keys_doc.get(AWS_SECRET_ACCESS_KEY_KEY),
-    )
+    try:
+        latest_enabled_version = next(
+            version.name for version in versions if version.state == 1
+        )
+    except StopIteration:
+        raise ValueError(f"No enabled versions for found secret {secret_id}.")
+    response = client.access_secret_version(name=latest_enabled_version)
+    return response.payload.data.decode("UTF-8")
