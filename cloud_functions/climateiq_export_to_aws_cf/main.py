@@ -51,7 +51,8 @@ def export_to_aws(request: flask.Request) -> tuple[str, int]:
             blob.metadata = {"export_time": curr_time_str}
             blob.patch()
     return (
-        f"Successfully exported {len(blobs_to_export)} CSV files to ClimaSens.\n",
+        f"Successfully exported {len(blobs_to_export)} CSV files to AWS bucket: "
+        f"{S3_BUCKET_NAME}.\n",
         200,
     )
 
