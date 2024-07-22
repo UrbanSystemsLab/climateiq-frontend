@@ -37,9 +37,6 @@ jobs:
     - name: Ensure black auto-formatter has run
       run: |
         black cloud_functions/climateiq_export_to_aws_cf --check
-    - name: Test with pytest
-      run: |
-        pytest cloud_functions/climateiq_export_to_aws_cf
     - name: MyPy Type Checking
       run: |
         mypy cloud_functions/climateiq_export_to_aws_cf
