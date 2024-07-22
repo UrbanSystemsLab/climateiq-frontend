@@ -55,7 +55,7 @@ def trigger_export_pipeline(cloud_event: http.CloudEvent) -> None:
         return
     _, _, _, file_count = filename.split("-")
     if prediction_type != "flood":
-        print('Export pipeline can currently only be used for flood predictions.')
+        print("Export pipeline can currently only be used for flood predictions.")
         return
     try:
         total_prediction_files = int(file_count)
