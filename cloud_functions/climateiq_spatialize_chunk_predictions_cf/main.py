@@ -3,8 +3,10 @@ import json
 import pandas as pd
 import pathlib
 import os
+import time
 import numpy as np
 import functions_framework
+import logging
 import geopandas as gpd
 
 from typing import Any
@@ -13,6 +15,9 @@ from google.cloud import firestore_v1
 from google.cloud.storage import client as gcs_client
 from shapely import geometry
 from h3 import h3
+from google.api_core import exceptions as api_exceptions
+from google.api_core.retry import retry_base
+from google.cloud.storage import retry
 
 INPUT_BUCKET_NAME = os.environ.get("BUCKET_PREFIX", "") + "climateiq-chunk-predictions"
 OUTPUT_BUCKET_NAME = (
@@ -25,6 +30,13 @@ H3_LEVEL = 13
 STUDY_AREAS_ID = "study_areas"
 CHUNKS_ID = "chunks"
 
+start_time = 0
+
+def retry_predicate(exception: Exception) -> bool:
+    logging.info(f"Retrying due to {exception}")
+    return retry_base.if_transient_error(exception) or isinstance(
+        exception, api_exceptions.NotFound
+    )
 
 # Triggered from a message on the "climateiq-spatialize-and-export-predictions"
 # Pub/Sub topic.
@@ -38,6 +50,8 @@ def spatialize_chunk_predictions(cloud_event: http.CloudEvent) -> None:
     Args:
         cloud_event: The CloudEvent representing the Pub/Sub message.
     """
+    global start_time
+    start_time = time.time()
     object_name = base64.b64decode(cloud_event.data["message"]["data"]).decode()
 
     # Extract components from the object name.
@@ -67,10 +81,11 @@ def spatialize_chunk_predictions(cloud_event: http.CloudEvent) -> None:
             object_name,
             chunks_ref,
         )
+        print(f"Calculating H3 indexes for object {object_name} took {time.time() - start_time} seconds")
     except ValueError as ve:
         # Any raised ValueErrors are non-retriable so return instead of throwing an
         # exception (which would trigger retries)
-        print(ve)
+        print(f"Error for {object_name}: {ve}")
         return
 
     storage_client = gcs_client.Client()
@@ -81,7 +96,8 @@ def spatialize_chunk_predictions(cloud_event: http.CloudEvent) -> None:
     )
     with blob.open("w") as fd:
         h3_predictions.to_csv(fd)
-
+    print(f"Writing CSV for object {object_name} took {time.time() - start_time} seconds")
+    end_time = time.time()
 
 # TODO: Modify this logic once CNN output schema is confirmed. Also update to
 # account for errors and special values.
@@ -101,7 +117,9 @@ def _read_chunk_predictions(object_name: str) -> np.ndarray:
     bucket = storage_client.bucket(INPUT_BUCKET_NAME)
     blob = bucket.blob(object_name)
 
-    with blob.open() as fd:
+    with blob.open(
+            "rb", retry=retry.DEFAULT_RETRY.with_predicate(retry_predicate)
+        ) as fd:
         fd_iter = iter(fd)
         line = next(fd_iter, None)
         # The file is expected to contain only one prediction.
@@ -178,12 +196,12 @@ def _get_study_area_metadata(
         not study_area_metadata
         or "cell_size" not in study_area_metadata
         or "crs" not in study_area_metadata
-        or "row_count" not in study_area_metadata
-        or "col_count" not in study_area_metadata
+        or "chunk_x_count" not in study_area_metadata
+        or "chunk_y_count" not in study_area_metadata
     ):
         raise ValueError(
             f'Study area "{study_area_name}" is missing one or more required '
-            "fields: cell_size, crs, row_count, col_count"
+            "fields: cell_size, crs, chunk_x_count, chunk_y_count"
         )
 
     return study_area_metadata, chunks_ref
@@ -289,7 +307,37 @@ def _build_spatialized_model_predictions(
     )
 
 
-def _add_h3_index_details(cell: pd.Series) -> pd.Series:
+def _add_h3_index_details(cell: pd.Series, chunk_boundary: Any) -> pd.Series:
+    """Projects the cell centroid to a H3 index.
+
+    Args:
+        cell: A cell row containing the lat and lon of the cell centroid.
+
+    Returns:
+        A Series containing H3 information for the projected cell centroid.
+    """
+    h3_index = h3.geo_to_h3(cell["lat"], cell["lon"], H3_LEVEL)
+    centroid_lat, centroid_lon = h3.h3_to_geo(h3_index)
+
+    boundary_xy = geometry.Polygon(h3.h3_to_geo_boundary(h3_index, True))
+
+    # Check if centroid is within chunk AND if H3 cell is fully contained
+    is_boundary_cell = not boundary_xy.within(chunk_boundary)
+
+    if chunk_boundary.contains(geometry.Point(centroid_lon, centroid_lat)):
+        return pd.Series(
+            {
+                "h3_index": h3_index,
+                "h3_centroid_lat": centroid_lat,
+                "h3_centroid_lon": centroid_lon,
+                "h3_boundary": boundary_xy,
+                "is_boundary_cell": is_boundary_cell, 
+            }
+        )
+    else:
+        return None 
+
+def _add_neighbor_h3_index_details(cell: pd.Series) -> pd.Series:
     """Projects the cell centroid to a H3 index.
 
     Args:
@@ -309,7 +357,6 @@ def _add_h3_index_details(cell: pd.Series) -> pd.Series:
             "h3_boundary": geometry.Polygon(boundary_xy),
         }
     )
-
 
 def _get_chunk_boundary(study_area_metadata: dict, chunk_metadata: dict):
     """Calculates the boundary points of the chunk.
@@ -375,31 +422,56 @@ def _calculate_h3_indexes(
         ValueError: If an expected neighbor chunk does not exist or its metadata is
         missing required fields.
     """
-    # Calculate H3 information for each cell.
-    spatialized_predictions[
-        ["h3_index", "h3_centroid_lat", "h3_centroid_lon", "h3_boundary"]
-    ] = spatialized_predictions.apply(_add_h3_index_details, axis=1)
-
-    # Filter out any rows where the projected H3 centroid falls outside of the
-    # chunk boundary.
+    curr_time = time.time()
     chunk_boundary = _get_chunk_boundary(study_area_metadata, chunk_metadata)
-    spatialized_predictions = spatialized_predictions[
-        spatialized_predictions.apply(
-            lambda row: chunk_boundary.contains(
-                geometry.Point(row["h3_centroid_lon"], row["h3_centroid_lat"])
-            ),
-            axis=1,
-        )
-    ]
 
-    # Extract rows where the projected H3 cell is not fully contained within the chunk
-    # so we can aggregate prediction values across chunk boundaries.
+    # Calculate H3 information and check boundary status
+    spatialized_predictions[
+        ["h3_index", "h3_centroid_lat", "h3_centroid_lon", "h3_boundary", "is_boundary_cell"]
+    ] = spatialized_predictions.apply(
+        lambda row: _add_h3_index_details(row, chunk_boundary), axis=1
+    )
+
+    # Drop rows where H3 details are None (centroids outside chunk)
+    spatialized_predictions = spatialized_predictions.dropna(subset=["h3_index"]) 
+    
+
+    # Extract boundary cells for cross-chunk aggregation
     boundary_h3_cells = spatialized_predictions[
-        spatialized_predictions.apply(
-            lambda row: not row["h3_boundary"].within(chunk_boundary),
-            axis=1,
-        )
+        spatialized_predictions["is_boundary_cell"]
     ]["h3_boundary"].unique()
+
+    spatialized_predictions = spatialized_predictions.drop(columns=["is_boundary_cell"])
+    print(f"Adding H3 details {object_name} took {time.time() - curr_time} seconds")
+
+
+    # # Calculate H3 information for each cell.
+    # spatialized_predictions[
+    #     ["h3_index", "h3_centroid_lat", "h3_centroid_lon", "h3_boundary"]
+    # ] = spatialized_predictions.apply(_add_h3_index_details, axis=1)
+    # print(f"Adding H3 details {object_name} took {time.time() - curr_time} seconds")
+
+    # # Filter out any rows where the projected H3 centroid falls outside of the
+    # # chunk boundary.
+    # chunk_boundary = _get_chunk_boundary(study_area_metadata, chunk_metadata)
+    # spatialized_predictions = spatialized_predictions[
+    #     spatialized_predictions.apply(
+    #         lambda row: chunk_boundary.contains(
+    #             geometry.Point(row["h3_centroid_lon"], row["h3_centroid_lat"])
+    #         ),
+    #         axis=1,
+    #     )
+    # ]
+    # print(f"Filtering H3 details {object_name} took {time.time() - curr_time} seconds")
+
+    # # Extract rows where the projected H3 cell is not fully contained within the chunk
+    # # so we can aggregate prediction values across chunk boundaries.
+    # boundary_h3_cells = spatialized_predictions[
+    #     spatialized_predictions.apply(
+    #         lambda row: not row["h3_boundary"].within(chunk_boundary),
+    #         axis=1,
+    #     )
+    # ]["h3_boundary"].unique()
 
     return _aggregate_h3_predictions(
         study_area_metadata,
@@ -470,8 +542,8 @@ def _aggregate_h3_predictions(
         if (
             neighbor_x < 0
             or neighbor_y < 0
-            or neighbor_x >= study_area_metadata["col_count"]
-            or neighbor_y >= study_area_metadata["row_count"]
+            or neighbor_x >= study_area_metadata["chunk_x_count"]
+            or neighbor_y >= study_area_metadata["chunk_y_count"]
         ):
             # Chunk is outside the study area boundary.
             continue
@@ -529,7 +601,7 @@ def _aggregate_h3_predictions(
             neighbor_chunk_spatialized_predictions[
                 ["h3_index", "h3_centroid_lat", "h3_centroid_lon", "h3_boundary"]
             ] = neighbor_chunk_spatialized_predictions.apply(
-                _add_h3_index_details, axis=1
+                _add_neighbor_h3_index_details, axis=1
             )
             neighbor_chunk_spatialized_predictions = (
                 neighbor_chunk_spatialized_predictions[
