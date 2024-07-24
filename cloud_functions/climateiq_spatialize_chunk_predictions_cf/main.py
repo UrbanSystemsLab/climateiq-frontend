@@ -324,18 +324,22 @@ def _add_h3_index_details(cell: pd.Series, chunk_boundary: Any) -> pd.Series:
     # Check if centroid is within chunk AND if H3 cell is fully contained
     is_boundary_cell = not boundary_xy.within(chunk_boundary)
 
-    if chunk_boundary.contains(geometry.Point(centroid_lon, centroid_lat)):
-        return pd.Series(
-            {
-                "h3_index": h3_index,
-                "h3_centroid_lat": centroid_lat,
-                "h3_centroid_lon": centroid_lon,
-                "h3_boundary": boundary_xy,
-                "is_boundary_cell": is_boundary_cell, 
-            }
-        )
-    else:
-        return None 
+    if not chunk_boundary.contains(geometry.Point(centroid_lon, centroid_lat)):
+        h3_index = None
+        centroid_lat = None
+        centroid_lon = None
+        boundary_xy = None
+        is_boundary_cell = None
+        
+    return pd.Series(
+        {
+            "h3_index": h3_index,
+            "h3_centroid_lat": centroid_lat,
+            "h3_centroid_lon": centroid_lon,
+            "h3_boundary": boundary_xy,
+            "is_boundary_cell": is_boundary_cell,
+        }
+    )
 
 def _add_neighbor_h3_index_details(cell: pd.Series) -> pd.Series:
     """Projects the cell centroid to a H3 index.
