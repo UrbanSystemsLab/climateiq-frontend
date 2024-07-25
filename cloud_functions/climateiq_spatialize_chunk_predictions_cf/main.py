@@ -70,7 +70,7 @@ def spatialize_chunk_predictions(cloud_event: http.CloudEvent) -> None:
     except ValueError as ve:
         # Any raised ValueErrors are non-retriable so return instead of throwing an
         # exception (which would trigger retries)
-        print(ve)
+        print(f"Error for {object_name}: {ve}")
         return
 
     storage_client = gcs_client.Client()
@@ -178,12 +178,12 @@ def _get_study_area_metadata(
         not study_area_metadata
         or "cell_size" not in study_area_metadata
         or "crs" not in study_area_metadata
-        or "row_count" not in study_area_metadata
-        or "col_count" not in study_area_metadata
+        or "chunk_x_count" not in study_area_metadata
+        or "chunk_y_count" not in study_area_metadata
     ):
         raise ValueError(
             f'Study area "{study_area_name}" is missing one or more required '
-            "fields: cell_size, crs, row_count, col_count"
+            "fields: cell_size, crs, chunk_x_count, chunk_y_count"
         )
 
     return study_area_metadata, chunks_ref
@@ -470,8 +470,8 @@ def _aggregate_h3_predictions(
         if (
             neighbor_x < 0
             or neighbor_y < 0
-            or neighbor_x >= study_area_metadata["col_count"]
-            or neighbor_y >= study_area_metadata["row_count"]
+            or neighbor_x >= study_area_metadata["chunk_x_count"]
+            or neighbor_y >= study_area_metadata["chunk_y_count"]
         ):
             # Chunk is outside the study area boundary.
             continue
