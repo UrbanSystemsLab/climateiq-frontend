@@ -290,10 +290,11 @@ def _build_spatialized_model_predictions(
 
 
 def _add_h3_index_details(cell: pd.Series, chunk_boundary: Any) -> pd.Series:
-    """Projects the cell centroid to a H3 index.
+    """Projects the cell centroid to a H3 index and adds H3 details.
 
     Args:
         cell: A cell row containing the lat and lon of the cell centroid.
+        chunk_boundary: A shapely.Polygon representing the chunk.
 
     Returns:
         A Series containing H3 information for the projected cell centroid.
