@@ -412,7 +412,7 @@ def _calculate_h3_indexes(
     ] = spatialized_predictions.apply(
         lambda row: _add_h3_index_details(row, chunk_boundary), axis=1
     )
-    spatialized_predictions = spatialized_predictions.dropna(how='any')
+    spatialized_predictions = spatialized_predictions.dropna(how="any")
 
     # Extract rows where the projected H3 cell is not fully contained within the chunk
     # so we can aggregate prediction values across chunk boundaries.
