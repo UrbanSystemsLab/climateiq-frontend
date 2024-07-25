@@ -60,7 +60,11 @@ def export_to_aws(request: flask.Request) -> tuple[str, int]:
             blob.metadata = {"export_time": curr_time_str}
             blob.patch()
         logging.info(f"Successfully exported {blob.name} ({i + 1}/{total_blobs}).")
-    return (f"Successfully exported {total_blobs} CSV files to ClimaSens.\n", 200)
+    return (
+        f"Successfully exported {total_blobs} CSV files to ClimaSens "
+        f"({S3_BUCKET_NAME}/{curr_time_str}).\n",
+        200,
+    )
 
 
 def _get_prefix_id(request: flask.Request) -> str:
