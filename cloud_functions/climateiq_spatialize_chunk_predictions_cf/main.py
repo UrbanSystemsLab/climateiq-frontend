@@ -1,4 +1,3 @@
-import base64
 from concurrent import futures
 import itertools
 import json
@@ -6,7 +5,7 @@ import pathlib
 import os
 from typing import Any, Callable
 
-from cloudevents import http
+import flask
 import functions_framework
 import geopandas as gpd
 from google.cloud import firestore_v1
@@ -30,29 +29,34 @@ CHUNKS_ID = "chunks"
 NUM_PROCESSES = 8
 
 
-# Triggered from a message on the "climateiq-spatialize-and-export-predictions"
-# Pub/Sub topic.
-@functions_framework.cloud_event
-def spatialize_chunk_predictions(cloud_event: http.CloudEvent) -> None:
+def _get_object_name(request: flask.Request) -> str:
+    req_json = request.get_json(silent=True)
+    if req_json is None or "object_name" not in req_json:
+        raise ValueError("No object_name provided in request.\n")
+    return req_json["object_name"]
+
+
+# Triggered from a HTTP request.
+@functions_framework.http
+def spatialize_chunk_predictions(request: flask.Request):
     """This function spatializes model predictions for a single chunk.
 
     Spatialized model predictions are outputtted to a CSV file in GCS,
     containing H3 indexes along with associated predictions.
 
     Args:
-        cloud_event: The CloudEvent representing the Pub/Sub message.
+        request: The HTTP request to this Cloud Function.
     """
-    object_name = base64.b64decode(cloud_event.data["message"]["data"]).decode()
+    object_name = _get_object_name(request)
 
     # Extract components from the object name.
     path = pathlib.PurePosixPath(object_name)
     if len(path.parts) != 6:
-        print(
+        raise ValueError(
             f"Invalid object name format. Expected format: '<id>/<prediction_type>/"
             "<model_id>/<study_area_name>/<scenario_id>/<chunk_id>'\n"
             f"Actual name: '{object_name}'"
         )
-        return
 
     id, prediction_type, model_id, study_area_name, scenario_id, chunk_id = path.parts
     try:
@@ -74,8 +78,7 @@ def spatialize_chunk_predictions(cloud_event: http.CloudEvent) -> None:
     except ValueError as ve:
         # Any raised ValueErrors are non-retriable so return instead of throwing an
         # exception (which would trigger retries)
-        print(f"Error for {object_name}: {ve}")
-        return
+        raise ValueError(f"Error for {object_name}: {ve}")
 
     storage_client = gcs_client.Client()
     bucket = storage_client.bucket(OUTPUT_BUCKET_NAME)
@@ -143,7 +146,7 @@ def _read_neighbor_chunk_predictions(
             "<model_id>/<study_area_name>/<scenario_id>/<chunk_id>'\n"
             f"Actual name: '{object_name}'"
         )
-    *prefix, current_chunk_id = path.parts
+    *prefix, _ = path.parts
     neighbor_object_name = pathlib.PurePosixPath(*prefix, neighbor_chunk_id)
     return _read_chunk_predictions(str(neighbor_object_name))
 
