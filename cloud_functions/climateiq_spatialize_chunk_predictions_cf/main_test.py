@@ -387,7 +387,7 @@ def test_spatialize_chunk_predictions_missing_expected_neighbor_chunk(
     ):
         with pytest.raises(
             ValueError,
-            match="Neighbor chunk at index (0, 1) is missing from the study area",
+            match=r"Neighbor chunk at index \(0, 1\) is missing from the study area",
         ):
             main.spatialize_chunk_predictions(flask.request)
 
@@ -445,8 +445,9 @@ def test_spatialize_chunk_predictions_invalid_neighbor_chunk(
         with pytest.raises(
             ValueError,
             match=(
-                "Neighbor chunk at index (0, 1) is missing one or more required fields:"
-                " id, row_count, col_count, x_ll_corner,y_ll_corner, x_index, y_index"
+                r"Neighbor chunk at index \(0, 1\) is missing one or more required "
+                "fields: id, row_count, col_count, x_ll_corner,y_ll_corner, x_index, "
+                "y_index"
             ),
         ):
             main.spatialize_chunk_predictions(flask.request)

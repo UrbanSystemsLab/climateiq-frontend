@@ -89,6 +89,8 @@ def spatialize_chunk_predictions(request: flask.Request):
     with blob.open("w") as fd:
         h3_predictions.to_csv(fd)
 
+    return "Success!"
+
 
 # TODO: Modify this logic once CNN output schema is confirmed. Also update to
 # account for errors and special values.
